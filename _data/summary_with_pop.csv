@@ -1,4 +1,4 @@
-country, year,population,beef (kg/capita),pig (kg/capita),poultry (kg/capita),sheep(kg/capita),maize (1000 tonnes),rice (1000 tonnes),soy(1000 tonnes),wheat(1000 tonnes)
+country,year,population,beef (kg/capita),pig (kg/capita),poultry (kg/capita),sheep (kg/capita),maize (1000 tonnes),rice (1000 tonnes),soy (1000 tonnes),wheat (1000 tonnes)
 ARG,1990,32.580854,55.559,3.674,8.66,2.282,7685,291.04,11500,11037
 ARG,1991,33.028546,51.817,3.612,8.88,2.347,10701,236.64,11310,9999
 ARG,1992,33.475005,50.98,4.487,10.027,1.894,10901,498.44,11045,9996
