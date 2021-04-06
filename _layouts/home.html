@@ -155,7 +155,6 @@ title: Home
         }
       })
       
-      console.log(mappedData)
       var stackedData = d3.stack()
         .keys(keys)
         (mappedData)
@@ -343,11 +342,14 @@ title: Home
           .style("alignment-baseline", "middle")
           .on("mouseover", highlight)
           .on("mouseleave", noHighlight)
+
+
+        //d3.select('#mySliders').on('change', showFoodConsumption(keys, data));
+        //d3.select('#myYear').on('change', showFoodConsumption(keys, data));
     }
 
     d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv")
         .then(function (csv) {
-            console.log(csv);
             //var countryData = csv.filter(d => d.country === order)
             var countryData = csv.filter(d => d.country === 'USA')
             showFoodConsumption(allKeys, countryData);
