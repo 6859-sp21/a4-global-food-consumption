@@ -3,31 +3,355 @@ layout: default
 title: Home
 ---
 
-{% for post in paginator.posts %}
+<!DOCTYPE html>
+<meta charset="utf-8">
 
-<article>
-  <a href="{{ site.github.url }}{{ post.url }}">
-    <div class="featured-posts" {% if post.image %}style="background-image:url({{ site.github.url }}/assets/img/{{ post.image }})"{% endif %}>
-      <h2><span>{{ post.title }}</span></h2>
-    </div>
-  </a>
-</article>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
 
-{% endfor %}
+<div id="mySliders"></div>
+<div id="myYear"></div>
+<div id="myCanvas"></div>
 
-<!-- Pagination links -->
-<!--
-<div class="pagination">
-  {% if paginator.next_page %}
-    <a class="pagination-button pagination-active next" href="{{ site.github.url }}{{ paginator.next_page_path }}">{{ site.data.settings.pagination.previous_page }}</a>
-  {% else %}
-    <span class="pagination-button">{{ site.data.settings.pagination.previous_page }}</span>
-  {% endif %}
+<script>
+//    viewof order = {
+//        const options = csv.filter(d => d.year == 1990).map(d => d.country)
+//        const form = html`<form style="display: flex; align-items: center; min-height: 33px;"><select name=i>${options.map(o => html`<option>${document.createTextNode(o)}`)}`;
+//        const timeout = setTimeout(() => {
+//            form.i.selectedIndex = 2;
+//            form.onchange();
+//            },
+//            2000
+//        );
+//        form.onchange = () => {
+//            clearTimeout(timeout);
+//            form.value = options[form.i.selectedIndex];
+//            form.dispatchEvent(new CustomEvent("input"));
+//        };
+//        form.value = options[form.i.selectedIndex];
+//        return form;
+//    }
 
-  {% if paginator.previous_page %}
-    <a class="pagination-button pagination-active" href="{{ site.baseurl }}{{ paginator.previous_page_path }}">{{ site.data.settings.pagination.next_page }}</a>
-    {% else %}
-      <span class="pagination-button">{{ site.data.settings.pagination.next_page }}</span>
-  {% endif %}
-</div>
--->
+    // Food sliders
+    let beef = 0;
+    let sheep = 0;
+    let poultry = 0;
+    let pig = 0;
+    let yr = 2018;
+    let meat = [
+      { index: 0, label: 'beef'},
+      { index: 1, label: 'pig'},
+      { index: 2, label: 'poultry'},
+      { index: 3, label: 'sheep'},
+    ];
+
+    let div = d3.select('#mySliders');
+    
+    var entries = div.selectAll('g')
+        .data(meat)
+        .join('g')
+
+    var labels = entries.append('text')
+        .text(d => '\xa0\xa0\xa0\xa0\xa0   Reduce ' + d.label + ' by (%)')
+
+    entries.append('text')
+        .text('\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0')  
+
+    meat.forEach((d, i) => {
+        var slider = d3
+            .sliderBottom()
+            .min(0)
+            .max(100)
+            .step(10)
+            .width(100)
+            .default(0)
+            .ticks(5)
+            .displayValue(true)
+            .handle(
+              d3
+              .symbol()
+              .type(d3.symbolCircle)
+              .size(50)()
+            )
+            .on('onchange', num => {
+              if (i == 0){beef = num;}
+              else if (i == 1){pig = num;}
+              else if (i == 2){poultry = num;}
+              else if (i == 3){sheep = num;}
+            });
+
+        div
+            .append('svg')
+            .attr('width', 220)
+            .attr('height', 100)
+            .append('g')
+            .attr('transform', `translate(${ 50},30)`)
+            .call(slider);
+    });
+
+    let yearDiv = d3.select('#myYear');
+    let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 220});
+    var slider = d3
+       .sliderBottom()
+       .min(1990)
+       .max(2018)
+       .step(1)
+       .ticks(3)
+       .width(yearMargin.width - yearMargin.right - yearMargin.left)
+       .default(0)
+       .displayValue(true)
+       .fill('blue')
+       .default(2018)
+       .handle(
+         d3
+         .symbol()
+         .type(d3.symbolCircle)
+         .size(200)()
+       )
+       .on('onchange', num => {
+            yr = num;
+       });
+
+    yearDiv
+        .append('svg')
+        .attr('width', yearMargin.width)
+        .attr('height', 100)
+        .append('g')
+        .attr('transform', `translate(${ 50},30)`)
+        .call(slider);
+
+
+    // CANVAS
+    var allKeys = ['beef', 'pig', 'poultry', 'sheep']
+
+    // GENERAL
+    const margin = {top: 30, right: 100, bottom: 30, left: 60},
+      width = 600,
+      height = 400;
+
+    const svg = d3.select('#myCanvas')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+    // The showFoodConsumption function gets called every time we update the keys
+    // Ideally, we would call it every time we update the country too
+    function showFoodConsumption(keys, data) {
+      svg.selectAll('*').remove();
+
+      // DATA
+      var mappedData = data.map(d => {
+        if (d.year > yr) {
+          return ({
+            year: d.year,
+            beef: d.beef * (100 - beef) / 100,
+            pig: d.pig * (100 - pig) / 100,
+            poultry: d.poultry * (100 - poultry) / 100,
+            sheep: d.sheep * (100 - sheep) / 100
+          })
+        } else {
+          return d;
+        }
+      })
+      
+      console.log(mappedData)
+      var stackedData = d3.stack()
+        .keys(keys)
+        (mappedData)
+
+      var color = d3.scaleOrdinal()
+        .domain(allKeys)
+        .range(d3.schemeTableau10);
+
+    // AXES
+    const x = d3.scaleLinear()
+      .domain(d3.extent(data, d => d.year))
+      .range([margin.left, width - margin.right])
+      .nice();
+
+    const y = d3.scaleLinear()
+      .domain([0, 1.4 * d3.max(data, d => d.total_meat)])
+      .range([height - margin.bottom, margin.top])
+      .nice();
+
+    // create x axis
+    var xAxis = svg.append("g")
+      .attr('transform', `translate(0, ${height - margin.bottom})`)
+      .call(d3.axisBottom(x).ticks(5, ".0f"))
+      .append('text')
+        .attr('text-anchor', 'end')
+        .attr('fill', 'black')
+        .attr('font-size', '12px')
+        .attr('font-weight', 'bold')
+        .attr('x', width - margin.right)
+        .attr('y', margin.bottom)
+        .text('Year')
+
+    //create y-axis
+    var yAxis = svg.append("g")
+      .attr('transform', `translate(${margin.left}, 0)`)
+      .call(d3.axisLeft(y))
+      .append('text')
+        .attr('transform', `translate(${-margin.left/2}, ${margin.top / 2})`)
+        .attr('text-anchor', 'start')
+        .attr('fill', 'black')
+        .attr('font-size', '12px')
+        .attr('font-weight', 'bold')
+        .text('CO2 equivalent emissions (1000 tons)');
+
+
+    // Line
+    const line = d3.line()
+      .x(d => x(d.year))
+      .y(d => y(d.total_meat))
+
+
+    // BRUSHING
+    // Add a clipPath: everything out of this area won't be drawn.
+    var clip = svg.append("defs").append("svg:clipPath")
+        .attr("id", "clip")
+        .append("svg:rect")
+        .attr("width", width - margin.right - margin.left)
+        .attr("height", height - margin.top)
+        .attr("x", margin.left)
+        .attr("y", margin.bottom);
+
+    // Add brushing
+    var brush = d3.brushX()
+        .extent([[0, 0], [width, height]])
+        .on("end", updateChart)
+
+    // Create the scatter variable: where both the circles and the brush take place
+    var areaChart = svg
+      .append('g')
+      .attr("clip-path", "url(#clip)")
+
+    var idleTimeout
+    function idled() { idleTimeout = null; }
+
+    // A function that update the chart for given boundaries
+    function updateChart(event, d_) {
+      var duration = 500
+      var extent = event.selection
+      if(!extent) {
+        if (!idleTimeout) return idleTimeout = setTimeout(idled, duration);
+        x.domain(d3.extent(data, d => d.year));
+      } else {
+        x.domain([ x.invert(extent[0]), x.invert(extent[1]) ]);
+        areaChart.select(".brush").call(brush.move, null);
+      }
+
+      xAxis.transition().duration(duration).call(d3.axisBottom(x).ticks(5, ".0f"))
+      areaChart
+        .selectAll("myPath")
+        .transition().duration(duration)
+        .attr("d", area)
+    }
+
+
+    // AREA
+    var area = d3.area()
+      .x(d => x(d.data.year))
+      .y0(d => y(d[0]))
+      .y1(d => y(d[1]))  
+
+    // Show the areas
+    areaChart
+      .selectAll("mylayers")
+      .data(stackedData)
+      .enter()
+      .append("path")
+        .attr("class", d => "myArea " + d.key)
+        .style("fill", d => color(d.key))
+        .attr("d", area);
+
+    // Show the total meat consumption with a line
+    areaChart.append('path')
+      .datum(data)
+      .attr("class", d => "myLine " + d.key)
+      .attr("fill", "none")
+      .attr("stroke", "#707070")
+      .attr("stroke-width", 1.5)
+      .attr('d', line(data))
+
+    areaChart
+      .append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+
+    // LEGEND
+    // What to do when one group is hovered
+      var highlight = function(d, key){
+        d3.selectAll(".myArea").style("opacity", .1)
+        d3.select("." + key).style("opacity", 1)
+      }
+
+      // And when it is not hovered anymore
+      var noHighlight = function(d){
+        d3.selectAll(".myArea").style("opacity", 1)
+      }
+      
+      var toggleLegend = function(d, key) {
+        var newKeys = [...keys]
+        const index = newKeys.indexOf(key);
+        if (index > -1) {
+          newKeys.splice(index, 1);
+        } else {
+          newKeys.push(key);
+        }
+        showFoodConsumption(newKeys, data);
+      }   
+      
+      var legendOpacity = function(d, i) {
+        const index = keys.indexOf(d);
+        if (index > -1) {
+          return 1
+        } else {
+          return 0.2
+        }
+      }
+
+      // Add one dot in the legend for each name.
+      var size = 20
+      svg.selectAll("myrect")
+        .data(allKeys)
+        .enter()
+        .append("rect")
+          .attr("x", width - 0.9 * margin.right)
+          .attr("y", (d, i) => 10 + i * (size + 5))
+          .attr("width", size)
+          .attr("height", size)
+          .attr("opacity", legendOpacity)
+          .style("fill", d => color(d))
+          .on("mouseover", highlight)
+          .on("mouseleave", noHighlight)
+          .on("click", toggleLegend)
+
+      // Add one dot in the legend for each name.
+      svg.selectAll("mylabels")
+        .data(allKeys)
+        .enter()
+        .append("text")
+          .attr("x", width - 0.9 * margin.right + size * 1.2)
+          .attr("y", (d,i) => 10 + i * (size + 5) + (0.75 * size))
+          .attr("opacity", legendOpacity)
+          .style("fill", d => color(d))
+          .text(d => d)
+          .attr("text-anchor", "left")
+          .style("alignment-baseline", "middle")
+          .on("mouseover", highlight)
+          .on("mouseleave", noHighlight)
+    }
+
+    d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv")
+        .then(function (csv) {
+            console.log(csv);
+            //var countryData = csv.filter(d => d.country === order)
+            var countryData = csv.filter(d => d.country === 'USA')
+            showFoodConsumption(allKeys, countryData);
+        })
+
+
+</script>
