@@ -39,8 +39,8 @@ title: Home
       { index: 3, label: 'sheep'},
     ];
     
-    let legendData = csv.filter( d => d.country === 'USA')
-    let data = csv.filter( d => d.year <= yr).filter( d => d.country === 'USA')
+    let legendData = csv.filter( d => d.country === 'WLD')
+    let data = csv.filter( d => d.year <= yr).filter( d => d.country === 'WLD')
     let newdata = data.map(d => ({
         year: d.year, 
         beef: d.beef * (1-beef/100) , 
@@ -67,7 +67,7 @@ title: Home
       poultry: d.poultry * (1-poultry/100) * 6
     }))
 
-    let legendCarbonData = csv.filter( d => d.country === 'USA').map(d => ({
+    let legendCarbonData = csv.filter( d => d.country === 'WLD').map(d => ({
         year: d.year, 
         beef: d.beef * 60, 
         pig: d.pig * 7, 
@@ -175,8 +175,8 @@ title: Home
     });
    
     function chart_actual () {
-      legendData = csv.filter( d => d.country === 'USA');
-      data = csv.filter( d => d.year <= yr).filter( d => d.country === 'USA');
+      legendData = csv.filter( d => d.country === 'WLD');
+      data = csv.filter( d => d.year <= yr).filter( d => d.country === 'WLD');
       newdata = data.map(d => ({
         year: d.year, 
         beef: d.beef * (1-beef/100) , 
@@ -279,7 +279,7 @@ title: Home
           poultry: d.poultry * (1-poultry/100) * 6
         }))
 
-        legendCarbonData = csv.filter( d => d.country === 'USA').map(d => ({
+        legendCarbonData = csv.filter( d => d.country === 'WLD').map(d => ({
             year: d.year, 
             beef: d.beef * 60, 
             pig: d.pig * 7, 
