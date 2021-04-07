@@ -3,6 +3,7 @@ layout: default
 title: Home
 ---
 
+
 <!DOCTYPE html>
 <meta charset="utf-8">
 
@@ -18,6 +19,7 @@ title: Home
 
 <div id="myYear" style="width:900px;height:100px;"  class = "center"></div>
 <div id="mySliders" class = "center"></div>
+<div id="country_selector" class = "center"></div>
 <div id="myCanvas1"  class = "center"></div>
 <div id="myCanvas2"  class = "center"></div>
 
@@ -38,16 +40,17 @@ title: Home
       { index: 2, label: 'poultry'},
       { index: 3, label: 'sheep'},
     ];
-    
-    let legendData = csv.filter( d => d.country === 'WLD')
-    let data = csv.filter( d => d.year <= yr).filter( d => d.country === 'WLD')
+    let country = 'WLD';
+
+    let legendData = csv.filter( d => d.country === country);
+    let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
     let newdata = data.map(d => ({
         year: d.year, 
         beef: d.beef * (1-beef/100) , 
         pig: d.pig *(1-pig/100), 
         sheep: d.sheep * (1-sheep/100) , 
         poultry: d.poultry * (1-poultry/100) 
-    }))
+    }));
 
 
 
@@ -57,7 +60,7 @@ title: Home
       pig: d.pig * 7, 
       sheep: d.sheep * 24, 
       poultry: d.poultry* 6
-    }))
+    }));
 
     let newcarbonData = data.map(d => ({
       year: d.year, 
@@ -65,15 +68,15 @@ title: Home
       pig: d.pig *(1-pig/100)* 7, 
       sheep: d.sheep * (1-sheep/100) * 24, 
       poultry: d.poultry * (1-poultry/100) * 6
-    }))
+    }));
 
-    let legendCarbonData = csv.filter( d => d.country === 'WLD').map(d => ({
+    let legendCarbonData = csv.filter( d => d.country === country).map(d => ({
         year: d.year, 
         beef: d.beef * 60, 
         pig: d.pig * 7, 
         sheep: d.sheep * 24, 
         poultry: d.poultry* 6
-    }))
+    }));
 
 
     
@@ -173,10 +176,41 @@ title: Home
                 .text(d => 'Reduce ' + meat[i].label + ' by (%)')
                 .attr('transform', `translate(${-10},50)`);
     });
-   
+    
+
+    let div_country = d3.select('country_selector');
+    const options = csv.filter(d => parseInt(d.year) === 1990);
+    
+    
+    let selector = div.append('select');
+    selector
+      .selectAll("option")
+      .data(options)
+      .join("option")
+      .text(d => d.country)
+      .attr("value", d => d.country)
+      .property("selected", function(d){ return d.country === 'WLD'; })
+    
+      
+    d3.select('select').on("change", function(d) {
+        country = d3.select(this).property("value");
+        document.getElementById("myCanvas1").innerHTML = '';
+        document.getElementById("myCanvas1").appendChild(chart_actual());
+
+        document.getElementById("myCanvas2").innerHTML = '';
+        document.getElementById("myCanvas2").appendChild(chart_emissions());
+        });
+
+
+
+
+
+
+
+
     function chart_actual () {
-      legendData = csv.filter( d => d.country === 'WLD');
-      data = csv.filter( d => d.year <= yr).filter( d => d.country === 'WLD');
+      legendData = csv.filter( d => d.country === country);
+      data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
       newdata = data.map(d => ({
         year: d.year, 
         beef: d.beef * (1-beef/100) , 
@@ -279,7 +313,7 @@ title: Home
           poultry: d.poultry * (1-poultry/100) * 6
         }))
 
-        legendCarbonData = csv.filter( d => d.country === 'WLD').map(d => ({
+        legendCarbonData = csv.filter( d => d.country === country).map(d => ({
             year: d.year, 
             beef: d.beef * 60, 
             pig: d.pig * 7, 
@@ -404,7 +438,6 @@ title: Home
     document.getElementById("myCanvas2").appendChild(old_chart2);
     })
 </script>
-
 
 
 
