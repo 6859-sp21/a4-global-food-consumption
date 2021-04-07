@@ -18,14 +18,12 @@ title: Home
 <p> Suppose that the world decided to reduce the amount of meat consumption by a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
 <p> To answer that question, select a year and a reduction in meat type, and verify the results.</p>
 
-<link rel="stylesheet" href="style.css" />
 </head>
 
 <div id="myYear" style="width:900px;height:100px;"  class = "center"></div>
 <div id="mySliders" class = "center"></div>
 <div id="country_selector" class = "center"></div>
 <div id="myCanvas1"  class = "center"></div>
-<div id="myCanvas2"  class = "center"></div>
 
 
 
@@ -37,7 +35,7 @@ title: Home
     let sheep = 0;
     let poultry = 0;
     let pig = 0;
-    let yr = 2018;
+    let yr = 2008;
     let meat = [
       { index: 0, label: 'beef'},
       { index: 1, label: 'pig'},
@@ -46,7 +44,6 @@ title: Home
     ];
     let country = 'WLD';
 
-    let legendData = csv.filter( d => d.country === country);
     let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
     let newdata = data.map(d => ({
         year: d.year, 
@@ -98,10 +95,9 @@ title: Home
        .step(1)
        //.ticks(3)
        .width(yearMargin.width - yearMargin.right - yearMargin.left)
-       .default(2018)
        .displayValue(true)
        .fill('blue')
-       .default(2018)
+       .default(2008)
        .handle(
          d3
          .symbol()
@@ -112,9 +108,6 @@ title: Home
             yr = num;
             document.getElementById("myCanvas1").innerHTML = '';
             document.getElementById("myCanvas1").appendChild(chart_actual());
-
-            document.getElementById("myCanvas2").innerHTML = '';
-            document.getElementById("myCanvas2").appendChild(chart_emissions());
        });
 
     yearDiv
@@ -158,9 +151,6 @@ title: Home
               //document.getElementById("myCanvas1").innerHTML = chart_actual().innerHTML;
               document.getElementById("myCanvas1").innerHTML = '';
               document.getElementById("myCanvas1").appendChild(chart_actual());
-
-              document.getElementById("myCanvas2").innerHTML = '';
-              document.getElementById("myCanvas2").appendChild(chart_emissions());
               
 
 
@@ -200,9 +190,6 @@ title: Home
         country = d3.select(this).property("value");
         document.getElementById("myCanvas1").innerHTML = '';
         document.getElementById("myCanvas1").appendChild(chart_actual());
-
-        document.getElementById("myCanvas2").innerHTML = '';
-        document.getElementById("myCanvas2").appendChild(chart_emissions());
         });
 
 
@@ -213,15 +200,20 @@ title: Home
 
 
     function chart_actual () {
-      legendData = csv.filter( d => d.country === country);
-      data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
-      newdata = data.map(d => ({
-        year: d.year, 
-        beef: d.beef * (1-beef/100) , 
-        pig: d.pig *(1-pig/100), 
-        sheep: d.sheep * (1-sheep/100) , 
-        poultry: d.poultry * (1-poultry/100) 
-       }));  
+      data = csv.filter( d => d.country === country);
+      newdata = data.map(d => {
+          if (d.year > yr) {
+              return ({
+                  year: d.year,
+                  beef: d.beef * (100 - beef) / 100,
+                  pig: d.pig * (100 - pig) / 100,
+                  poultry: d.poultry * (100 - poultry) / 100,
+                  sheep: d.sheep * (100 - sheep) / 100
+              })
+          } else {
+              return d;
+          }
+      });
 
 
 
@@ -232,7 +224,7 @@ title: Home
   
       const keys = csv.columns.slice(3,7);
       const series = d3.stack().keys(keys)(newdata);
-      const ori_series = d3.stack().keys(keys)(legendData);
+      const ori_series = d3.stack().keys(keys)(data);
   
       const x = d3.scaleLinear()
         .domain([d3.min(csv, d => d.year), d3.max(csv, d => d.year)])
@@ -248,7 +240,7 @@ title: Home
         .y1(d => y(d[1]))
   
       const color = d3.scaleOrdinal()
-        .domain(csv.columns.slice(3,7))
+        .domain(keys)
         .range(d3.schemeTableau10)
   
       const xAxis = g => g
@@ -272,7 +264,7 @@ title: Home
             .attr("text-anchor", "start")
             .attr("font-weight", "bold")
             .attr('font-size', '14px')
-            .text('Meat Consumption (kg/capita)'))
+            .text('CO2 emissions (1000 tons)'))
   
       const svg = d3.create("svg")
           .attr("viewBox", [0, 0, width, height]);
@@ -292,6 +284,18 @@ title: Home
 
       svg.append("g")
           .call(yAxis);
+      
+      const line = d3.line()
+          .x(d => x(d.year))
+          .y(d => y(d.total_meat))
+
+      svg.append("path")
+          .datum(data)
+          .attr("class", d => "myLine " + d.key)
+          .attr("fill", "none")
+          .attr("stroke", "#707070")
+          .attr("stroke-width", 1.5)
+          .attr('d', line(data))
   
       svg.append('g')
         .attr('transform', `translate(${width - 0.9 * margin.right}, ${height/10})`)
@@ -300,105 +304,6 @@ title: Home
       return svg.node()
     }
 
-    function chart_emissions() {
-        carbonData = data.map(d => ({
-          year: d.year, 
-          beef: d.beef * 60, 
-          pig: d.pig * 7, 
-          sheep: d.sheep * 24, 
-          poultry: d.poultry* 6
-        }))
-
-        newcarbonData = data.map(d => ({
-          year: d.year, 
-          beef: (d.beef * (1-beef/100)) * 60, 
-          pig: d.pig *(1-pig/100)* 7, 
-          sheep: d.sheep * (1-sheep/100) * 24, 
-          poultry: d.poultry * (1-poultry/100) * 6
-        }))
-
-        legendCarbonData = csv.filter( d => d.country === country).map(d => ({
-            year: d.year, 
-            beef: d.beef * 60, 
-            pig: d.pig * 7, 
-            sheep: d.sheep * 24, 
-            poultry: d.poultry* 6
-        }))
-        
-        const width = 900;
-        const height = 300; 
-        const margin = {top: 20, right: 120, bottom: 30, left: 60};
-  
-        const keys = csv.columns.slice(3,7);
-        const series = d3.stack().keys(keys)(newcarbonData);
-        const ori_series = d3.stack().keys(keys)(legendCarbonData);
-  
-        const x = d3.scaleLinear()
-        .domain([d3.min(csv, d => d.year), d3.max(csv, d => d.year)])
-        .range([margin.left, width - margin.right])
-  
-        const y = d3.scaleLinear()
-        .domain([0, d3.max(ori_series, d => d3.max(d, d => d[1]))]).nice()
-        .range([height - margin.bottom, margin.top])
-  
-        const area = d3.area()
-        .x(d => x(d.data.year))
-        .y0(d => y(d[0]))
-        .y1(d => y(d[1]))
-  
-        const color = d3.scaleOrdinal()
-        .domain(csv.columns.slice(3,7))
-        .range(d3.schemeTableau10)
-  
-        const xAxis = g => g
-        .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(10, ".0f"))
-        .append('text')
-            .attr('text-anchor', 'end')
-            .attr('fill', 'black')
-            .attr('font-size', '14px')
-            .attr('font-weight', 'bold')
-            .attr('x', width - margin.right)
-            .attr('y', 30)
-            .text('Year')
-  
-        const yAxis = g => g
-        .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(5))
-        .call(g => g.select(".domain").remove())
-        .call(g => g.select(".tick:last-of-type text").clone()
-            .attr("x", 3)
-            .attr("text-anchor", "start")
-            .attr("font-weight", "bold")
-            .attr('font-size', '14px')
-            .text('CO2 Equivalent Emissions per Capita (GHG Emissions per 1kg Produced)'))
-  
-        const svg = d3.create("svg")
-            .attr("viewBox", [0, 0, width, height]);
-  
-        svg.append("g")
-        .selectAll("path")
-        .data(series)
-        .join("path")
-            .attr("fill", ({key}) => color(key))
-            .attr("d", area)
-            .attr("opacity", 0.9)
-        .append("title")
-            .text(({key}) => key);
-
-        svg.append("g")
-            .call(xAxis);
-
-        svg.append("g")
-            .call(yAxis);
-  
-        svg.append('g')
-        .attr('transform', `translate(${width - 0.9 * margin.right}, ${height/10})`)
-        .call(colorLegend); 
-
-        return svg.node()
-  
-    }
 
 
     function colorLegend(container) {
@@ -435,7 +340,6 @@ title: Home
         }
 
     let old_chart1 = chart_actual ();
-    let old_chart2 = chart_emissions ();
 
 
     document.getElementById("myCanvas1").appendChild(old_chart1);
