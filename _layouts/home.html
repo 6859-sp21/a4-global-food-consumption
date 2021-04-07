@@ -13,7 +13,7 @@ title: Home
 
 
 <head> 
-<h1 class = "center" > How does eating meat impact CO2 emissions?</h1> 
+<h1 class = "center" > How does eating meat impact CO<sub>2</sub> emissions?</h1> 
 
 <p> Suppose that the world decided to reduce the amount of meat consumption by a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
 <p> To answer that question, select a year and a reduction in meat type, and verify the results.</p>
@@ -25,7 +25,11 @@ title: Home
 <div id="country_selector" class = "center"></div>
 <div id="myCanvas1"  class = "center"></div>
 
+<p> This reduction would prevent <a id="savings"></a> megatons of CO<sub>2</sub> from being emitted.</p>
+<p> This would be equivalent to removing <a id="cars" style="color:#06a64f"></a> cars per year!</p>
 
+<p></p>
+<p class="center" style="color:#808080;font-size:12px;"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
 
 <script>
     d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
@@ -43,45 +47,6 @@ title: Home
       { index: 3, label: 'sheep'},
     ];
     let country = 'WLD';
-
-    let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
-    let newdata = data.map(d => ({
-        year: d.year, 
-        beef: d.beef * (1-beef/100) , 
-        pig: d.pig *(1-pig/100), 
-        sheep: d.sheep * (1-sheep/100) , 
-        poultry: d.poultry * (1-poultry/100) 
-    }));
-
-
-
-    let carbonData = data.map(d => ({
-      year: d.year, 
-      beef: d.beef * 60, 
-      pig: d.pig * 7, 
-      sheep: d.sheep * 24, 
-      poultry: d.poultry* 6
-    }));
-
-    let newcarbonData = data.map(d => ({
-      year: d.year, 
-      beef: (d.beef * (1-beef/100)) * 60, 
-      pig: d.pig *(1-pig/100)* 7, 
-      sheep: d.sheep * (1-sheep/100) * 24, 
-      poultry: d.poultry * (1-poultry/100) * 6
-    }));
-
-    let legendCarbonData = csv.filter( d => d.country === country).map(d => ({
-        year: d.year, 
-        beef: d.beef * 60, 
-        pig: d.pig * 7, 
-        sheep: d.sheep * 24, 
-        poultry: d.poultry* 6
-    }));
-
-
-    
-
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +78,7 @@ title: Home
     yearDiv
         .append('text')
             .text('Year')
-            .style("font-size", "18px")
+            .style("font-size", "14px")
         .append('svg')
         .attr('width', yearMargin.width)
         .attr('height', 100)
@@ -195,14 +160,10 @@ title: Home
 
 
 
-
-
-
-
     function chart_actual () {
       data = csv.filter( d => d.country === country);
       newdata = data.map(d => {
-          if (d.year > yr) {
+          if (d.year >= yr) {
               return ({
                   year: d.year,
                   beef: d.beef * (100 - beef) / 100,
@@ -214,7 +175,13 @@ title: Home
               return d;
           }
       });
-
+      const savings = data.filter(d => d.year >= yr)
+          .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100 / 1000;
+      const savingsPerYear = savings / (2019 - yr);
+      // one car = 4.6 tons of CO2 per year
+      const cars = savingsPerYear * 1000000 / 4.6;
+      txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US').format(savings));
+        carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
 
 
       const width = 900;
@@ -343,7 +310,6 @@ title: Home
 
 
     document.getElementById("myCanvas1").appendChild(old_chart1);
-    document.getElementById("myCanvas2").appendChild(old_chart2);
     })
 </script>
 
