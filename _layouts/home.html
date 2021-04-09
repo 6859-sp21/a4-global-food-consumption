@@ -11,28 +11,42 @@ title: Home
 <script src="https://d3js.org/d3.v6.js"></script>
 <script src="https://unpkg.com/d3-simple-slider"></script>
 
-
+<link rel="stylesheet" href="/assets/css/style.css" />
 <head> 
-<h1 class = "center" > How does eating meat impact CO<sub>2</sub> emissions?</h1> 
-
-<p> Suppose that the world decided to reduce the amount of meat consumption by a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
-<p> To answer that question, select a year and a reduction in meat type, and verify the results.</p>
-
+<h1 id = "page_title" > Global Meat Consumption</h1> 
+<p class = "intro"> Suppose that the world decided to reduce the amount of meat consumption. How much would that simple measure impact our greenhouse gases emissions? </p>
+<p class = "intro"> Select a year and meat type, and check the results.</p>
 </head>
 
-<div id="myYear" style="width:900px;height:100px;"  class = "center"></div>
+<div id="myYear" class = "center"  ></div>
 <div id="mySliders" class = "center"></div>
-<div id="country_selector" class = "center"></div>
-<div id="myCanvas1"  class = "center"></div>
 
-<p> This reduction would prevent <a id="savings"></a> megatons of CO<sub>2</sub> from being emitted.</p>
-<p> This would be equivalent to removing <a id="cars" style="color:#06a64f"></a> cars per year!</p>
+<!-- <h2 id = "result_title" class = "result">Result</h2> -->
+<p class = "result" > 
+<a id="savings" style="color: red"></a> tonnes less CO<sub>2</sub> emission<br>
+Equivalent to removing <a id="cars" style="color: red"></a> cars <br>
+And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
+  <a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
+  <a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
+  <a id="sheep_savings" style="color:#06a64f"></a> grams of sheep per person per day! <br></p>
+
+
+
+
+<h3 id = "country_title"> WLD </h3> 
+<div id="country_selector" class = "center"></div>
+
+<div id="myCanvas1" style="float: left; width: 50%;" > </div>
+<div id="myCanvas2" style="float: right; width: 50%;"> </div>
+
+
 
 <p></p>
 <p class="center" style="color:#808080;font-size:12px;"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
 
 <script>
-    d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
+    //d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
+    d3.csv("/_data/emissions.csv").then((csv) => {
 
 
     let beef = 0;
@@ -46,19 +60,65 @@ title: Home
       { index: 2, label: 'poultry'},
       { index: 3, label: 'sheep'},
     ];
+
     let country = 'WLD';
+    
+    let legendData = csv.filter( d => d.country === country);
+    let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
+    let newdata = data.map(d => {
+          if (d.year >= yr) {
+              return ({
+                  year: d.year,
+                  beef: d.beef * (100 - beef) / 100,
+                  pig: d.pig * (100 - pig) / 100,
+                  poultry: d.poultry * (100 - poultry) / 100,
+                  sheep: d.sheep * (100 - sheep) / 100
+              })
+          } else {
+              return d;
+          }
+      });
+
+    let carbonData = data.map(d => ({
+      year: d.year, 
+      beef: d.beef_emissions, 
+      pig: d.pig_emissions, 
+      sheep: d.sheep_emissions, 
+      poultry: d.poultry_emissions
+    }));
+
+    let newcarbonData = carbonData.map(d => {
+          if (d.year >= yr) {
+              return ({
+                  year: d.year,
+                  beef: d.beef * (100 - beef) / 100 ,
+                  pig: d.pig * (100 - pig) / 100 ,
+                  sheep: d.sheep * (100 - sheep) / 100 ,
+                  poultry: d.poultry * (100 - poultry) /100
+                  
+              })
+          } else {
+              return d;
+          }
+      });
+
+    let meat_savings = 0;
+    const fmt = d3.format('.0f');
+    const slider_color = d3.scaleOrdinal()
+          .domain(meat.map(d => d.label))
+          .range(d3.schemeTableau10) // try other schemes, too!
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     //YEAR SLIDER
     let yearDiv = d3.select('#myYear');
-    let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 900});
+    let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 450});
     var slider = d3
        .sliderBottom()
        .min(1990)
        .max(2018)
        .step(1)
-       //.ticks(3)
+       .ticks(5)
        .width(yearMargin.width - yearMargin.right - yearMargin.left)
        .displayValue(true)
        .fill('blue')
@@ -73,17 +133,20 @@ title: Home
             yr = num;
             document.getElementById("myCanvas1").innerHTML = '';
             document.getElementById("myCanvas1").appendChild(chart_actual());
+
+            document.getElementById("myCanvas2").innerHTML = '';
+            document.getElementById("myCanvas2").appendChild(chart_emissions());
        });
 
     yearDiv
-        .append('text')
-            .text('Year')
-            .style("font-size", "14px")
+        // .append('text')
+        //     .text('Year')
+        //     .style("font-size", "14px")
         .append('svg')
         .attr('width', yearMargin.width)
         .attr('height', 100)
         .append('g')
-        .attr('transform', `translate(${ 50},30)`)
+        .attr('transform', `translate(${ 50},50)`)
         .call(slider);
 
 
@@ -100,6 +163,7 @@ title: Home
             .width(100)
             .default(0)
             .ticks(5)
+            .fill(d => slider_color(meat[i].label))
             .displayValue(true)
             .handle(
               d3
@@ -116,31 +180,31 @@ title: Home
               //document.getElementById("myCanvas1").innerHTML = chart_actual().innerHTML;
               document.getElementById("myCanvas1").innerHTML = '';
               document.getElementById("myCanvas1").appendChild(chart_actual());
+
+              document.getElementById("myCanvas2").innerHTML = '';
+              document.getElementById("myCanvas2").appendChild(chart_emissions());
               
 
 
             });
-        //div
-        //.append('text')
-        //.text(d => 'Reduce ' + meat[i].label + ' by (%)' + "\n");
+
 
         div
             .append('svg')
             .attr('width', 220)
-            .attr('height', 150)
+            .attr('height', 120)
             .append('g')
             .attr('transform', `translate(${75},10)`)
             .call(slider)
             .append('text')
                 .text(d => 'Reduce ' + meat[i].label + ' by (%)')
-                .attr('transform', `translate(${-10},50)`);
+                .attr('transform', `translate(${-10},75)`);
     });
     
-
+    ///////////////////////////////////////////////////////////////////////////////
+    //country selector
     let div_country = d3.select('country_selector');
     const options = csv.filter(d => parseInt(d.year) === 1990);
-    
-    
     let selector = div.append('select');
     selector
       .selectAll("option")
@@ -148,13 +212,16 @@ title: Home
       .join("option")
       .text(d => d.country)
       .attr("value", d => d.country)
-      .property("selected", function(d){ return d.country === 'WLD'; })
-    
-      
+      .property("selected", function(d){ return d.country === 'WLD'; })  
     d3.select('select').on("change", function(d) {
         country = d3.select(this).property("value");
         document.getElementById("myCanvas1").innerHTML = '';
         document.getElementById("myCanvas1").appendChild(chart_actual());
+
+        document.getElementById("myCanvas2").innerHTML = '';
+        document.getElementById("myCanvas2").appendChild(chart_emissions());
+        d3.select("#country_title")
+        .text(country)
         });
 
 
@@ -175,16 +242,24 @@ title: Home
               return d;
           }
       });
-      const savings = data.filter(d => d.year >= yr)
-          .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100 / 1000;
-      const savingsPerYear = savings / (2019 - yr);
-      // one car = 4.6 tons of CO2 per year
-      const cars = savingsPerYear * 1000000 / 4.6;
-      txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US').format(savings));
-        carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
+      meat_savings = data.filter(d => d.year == 2018)
+          .map(d => ({
+          beef: d.beef * (beef/100) /d.population/365 * 1000, 
+          pig: d.pig * (pig/100) /d.population/365 * 1000, 
+          sheep: d.sheep * (sheep/100) /d.population/365 * 1000, 
+          poultry: d.poultry * (poultry/100) /d.population/365 * 1000
+        }));
+      
+      
+      d3.select('#beef_savings').text(`${fmt(meat_savings[0].beef)}`);
+      d3.select('#pig_savings').text(`${fmt(meat_savings[0].pig)}`);
+      d3.select('#poultry_savings').text(`${fmt(meat_savings[0].poultry)}`);
+      d3.select('#sheep_savings').text(`${fmt(meat_savings[0].sheep)}`);
+      
 
 
-      const width = 900;
+      //Defining graph parameters
+      const width = 450;
       const height = 300;
       const margin = {top: 20, right: 120, bottom: 30, left: 60};
      
@@ -212,7 +287,7 @@ title: Home
   
       const xAxis = g => g
         .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(10, ".0f"))
+        .call(d3.axisBottom(x).ticks(5, ".0f"))
         .append('text')
           .attr('text-anchor', 'end')
           .attr('fill', 'black')
@@ -228,10 +303,11 @@ title: Home
         .call(g => g.select(".domain").remove())
         .call(g => g.select(".tick:last-of-type text").clone()
             .attr("x", 3)
+            .attr("y", -10)
             .attr("text-anchor", "start")
             .attr("font-weight", "bold")
             .attr('font-size', '14px')
-            .text('CO2 emissions (1000 tons)'))
+            .text('Total meat consumption (kg)'))
   
       const svg = d3.create("svg")
           .attr("viewBox", [0, 0, width, height]);
@@ -271,6 +347,115 @@ title: Home
       return svg.node()
     }
 
+    function chart_emissions() {
+        carbonData = data.map(d => ({
+          year: d.year, 
+          beef: d.beef_emissions, 
+          pig: d.pig_emissions, 
+          sheep: d.sheep_emissions, 
+          poultry: d.poultry_emissions
+        }));
+
+        newcarbonData = carbonData.map(d => {
+          if (d.year >= yr) {
+              return ({
+                  year: d.year,
+                  beef: d.beef * (100 - beef) / 100 ,
+                  pig: d.pig * (100 - pig) / 100 ,
+                  sheep: d.sheep * (100 - sheep) / 100 ,
+                  poultry: d.poultry * (100 - poultry) /100
+                  
+              })
+          } else {
+              return d;
+          }
+      });
+
+        const savings = carbonData.filter(d => d.year >= yr)
+            .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100;
+        const savingsPerYear = savings / (2019 - yr);
+        // one car = 4.6 tons of CO2 per year
+        const cars = savingsPerYear / 4.6;
+        txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(savings));
+        carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
+
+        
+        const width = 450;
+        const height = 300; 
+        const margin = {top: 20, right: 120, bottom: 30, left: 60};
+  
+        const keys = csv.columns.slice(3,7);
+        const series = d3.stack().keys(keys)(newcarbonData);
+        const ori_series = d3.stack().keys(keys)(carbonData);
+  
+        const x = d3.scaleLinear()
+        .domain([d3.min(csv, d => d.year), d3.max(csv, d => d.year)])
+        .range([margin.left, width - margin.right])
+  
+        const y = d3.scaleLinear()
+        .domain([0, d3.max(ori_series, d => d3.max(d, d => d[1]))]).nice()
+        .range([height - margin.bottom, margin.top])
+  
+        const area = d3.area()
+        .x(d => x(d.data.year))
+        .y0(d => y(d[0]))
+        .y1(d => y(d[1]))
+  
+        const color = d3.scaleOrdinal()
+        .domain(csv.columns.slice(3,7))
+        .range(d3.schemeTableau10)
+  
+        const xAxis = g => g
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(5, ".0f"))
+        .append('text')
+            .attr('text-anchor', 'end')
+            .attr('fill', 'black')
+            .attr('font-size', '14px')
+            .attr('font-weight', 'bold')
+            .attr('x', width - margin.right)
+            .attr('y', 30)
+            .text('Year')
+  
+        const yAxis = g => g
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5))
+        .call(g => g.select(".domain").remove())
+        .call(g => g.select(".tick:last-of-type text").clone()
+            .attr("x", 3)
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .attr('font-size', '14px')
+            .text('CO2 Emissions (1000 tons)'))
+  
+        const svg = d3.create("svg")
+            .attr("viewBox", [0, 0, width, height]);
+  
+        svg.append("g")
+        .selectAll("path")
+        .data(series)
+        .join("path")
+            .attr("fill", ({key}) => color(key))
+            .attr("d", area)
+            .attr("opacity", 0.9)
+        .append("title")
+            .text(({key}) => key);
+
+        svg.append("g")
+            .call(xAxis);
+
+        svg.append("g")
+            .call(yAxis);
+  
+        svg.append('g')
+        .attr('transform', `translate(${width - 0.9 * margin.right}, ${height/10})`)
+        .call(colorLegend); 
+
+        return svg.node()
+  
+    }
+
+
 
 
     function colorLegend(container) {
@@ -306,10 +491,13 @@ title: Home
             .text(d => d.label);
         }
 
+
     let old_chart1 = chart_actual ();
+    let old_chart2 = chart_emissions ();
 
 
     document.getElementById("myCanvas1").appendChild(old_chart1);
+    document.getElementById("myCanvas2").appendChild(old_chart2);
     })
 </script>
 
