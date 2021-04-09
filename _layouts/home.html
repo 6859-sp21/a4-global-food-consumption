@@ -13,8 +13,8 @@ title: Home
 
 <link rel="stylesheet" href="/assets/css/style.css" />
 <head> 
-<h1 id = "page_title" > Global Meat Consumption</h1> 
-<p class = "intro"> Suppose that the world decided to reduce the amount of meat consumption. How much would that simple measure impact our greenhouse gases emissions? </p>
+<h1 id = "page_title" > Rethinking meat consumption</h1> 
+<p class = "intro"> Suppose that the world decided to reduce the amount of meat consumption on a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
 <p class = "intro"> Select a year and meat type, and check the results.</p>
 </head>
 
@@ -23,31 +23,28 @@ title: Home
 
 <!-- <h2 id = "result_title" class = "result">Result</h2> -->
 <p class = "result" > 
-<a id="savings" style="color: red"></a> tonnes less CO<sub>2</sub> emission<br>
+<a id="savings" style="color: red"></a> tonnes less CO<sub>2</sub> emission (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
 Equivalent to removing <a id="cars" style="color: red"></a> cars <br>
-And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
+And that means each person would have to eat less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
   <a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
   <a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
-  <a id="sheep_savings" style="color:#06a64f"></a> grams of sheep per person per day! <br></p>
+  <a id="sheep_savings" style="color:#06a64f"></a> grams of sheep per day! <br></p>
 
 
 
 
-<h3 id = "country_title"> WLD </h3> 
+<h3 id = "country_title"> World </h3> 
 <div id="country_selector" class = "center"></div>
 
 <div id="myCanvas1" style="float: left; width: 50%;" > </div>
 <div id="myCanvas2" style="float: right; width: 50%;"> </div>
 
 
-
-<p></p>
-<p class="center" style="color:#808080;font-size:12px;"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
+<p>
+<p class="references"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
 
 <script>
-    //d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
-    d3.csv("/_data/emissions.csv").then((csv) => {
-
+    d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
 
     let beef = 0;
     let sheep = 0;
@@ -172,7 +169,6 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
               .size(50)()
             )
             .on('onchange', num => {
-              console.log('onchange');
               if (i == 0){beef = num;}
               else if (i == 1){pig = num;}
               else if (i == 2){poultry = num;}
@@ -210,19 +206,25 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
       .selectAll("option")
       .data(options)
       .join("option")
-      .text(d => d.country)
+      .text(d => d.country_name)
       .attr("value", d => d.country)
       .property("selected", function(d){ return d.country === 'WLD'; })  
+
     d3.select('select').on("change", function(d) {
         country = d3.select(this).property("value");
+        countryName = csv
+            .filter(d => parseInt(d.year) === 1990)
+            .filter(d => d.country === country)
+            .map(d => d.country_name)[0]
+
         document.getElementById("myCanvas1").innerHTML = '';
         document.getElementById("myCanvas1").appendChild(chart_actual());
 
         document.getElementById("myCanvas2").innerHTML = '';
         document.getElementById("myCanvas2").appendChild(chart_emissions());
-        d3.select("#country_title")
-        .text(country)
-        });
+
+        d3.select("#country_title").text(countryName)
+    });
 
 
 
@@ -244,12 +246,11 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
       });
       meat_savings = data.filter(d => d.year == 2018)
           .map(d => ({
-          beef: d.beef * (beef/100) /d.population/365 * 1000, 
-          pig: d.pig * (pig/100) /d.population/365 * 1000, 
-          sheep: d.sheep * (sheep/100) /d.population/365 * 1000, 
-          poultry: d.poultry * (poultry/100) /d.population/365 * 1000
+          beef: d.beef * (beef/100) / 365 * 1000, 
+          pig: d.pig * (pig/100) / 365 * 1000, 
+          sheep: d.sheep * (sheep/100) / 365 * 1000, 
+          poultry: d.poultry * (poultry/100) / 365 * 1000
         }));
-      
       
       d3.select('#beef_savings').text(`${fmt(meat_savings[0].beef)}`);
       d3.select('#pig_savings').text(`${fmt(meat_savings[0].pig)}`);
@@ -291,7 +292,7 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
         .append('text')
           .attr('text-anchor', 'end')
           .attr('fill', 'black')
-          .attr('font-size', '14px')
+          .attr('font-size', '12px')
           .attr('font-weight', 'bold')
           .attr('x', width - margin.right)
           .attr('y', 30)
@@ -306,8 +307,8 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
             .attr("y", -10)
             .attr("text-anchor", "start")
             .attr("font-weight", "bold")
-            .attr('font-size', '14px')
-            .text('Total meat consumption (kg)'))
+            .attr('font-size', '12px')
+            .text('Total meat consumption (kg/person/year)'))
   
       const svg = d3.create("svg")
           .attr("viewBox", [0, 0, width, height]);
@@ -371,12 +372,17 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
           }
       });
 
-        const savings = carbonData.filter(d => d.year >= yr)
-            .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100;
+        // carbonData in 1000 tons CO2 emissions
+        // beef, poultry, sheep, pig a number between 0-100 (percentage)
+        const savings = carbonData
+            .filter(d => d.year >= yr)
+            .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100 * 1000;
+        // carbonData is in 1000 tons CO2 equivalents
         const savingsPerYear = savings / (2019 - yr);
         // one car = 4.6 tons of CO2 per year
         const cars = savingsPerYear / 4.6;
         txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(savings));
+        txtSavings = d3.select('#savingsPercent').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(100 * savings / 51e9));
         carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
 
         
@@ -411,7 +417,7 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
         .append('text')
             .attr('text-anchor', 'end')
             .attr('fill', 'black')
-            .attr('font-size', '14px')
+            .attr('font-size', '12px')
             .attr('font-weight', 'bold')
             .attr('x', width - margin.right)
             .attr('y', 30)
@@ -423,10 +429,11 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
         .call(g => g.select(".domain").remove())
         .call(g => g.select(".tick:last-of-type text").clone()
             .attr("x", 3)
+            .attr("y", -10)
             .attr("text-anchor", "start")
             .attr("font-weight", "bold")
-            .attr('font-size', '14px')
-            .text('CO2 Emissions (1000 tons)'))
+            .attr('font-size', '12px')
+            .text('Emissions (1000 tons CO2 equivalents)'))
   
         const svg = d3.create("svg")
             .attr("viewBox", [0, 0, width, height]);
@@ -454,8 +461,6 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
         return svg.node()
   
     }
-
-
 
 
     function colorLegend(container) {
@@ -500,10 +505,3 @@ And that is only less <a id="beef_savings" style="color:#06a64f"></a> grams of b
     document.getElementById("myCanvas2").appendChild(old_chart2);
     })
 </script>
-
-
-
-
-
-
-

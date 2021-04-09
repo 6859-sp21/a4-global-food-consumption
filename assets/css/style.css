@@ -5,7 +5,7 @@
 
 h1 {
     text-align: center;
-    font-size:40pt;
+    font-size: 25px;
     font-family: sans-serif;
     color: black;
     }
@@ -45,4 +45,11 @@ h1 {
     font-family: Verdana;
     font-size: 24px;
     //text-decoration: underline;
+}
+
+.references {
+    color: #808080;
+    font-size: 12px;
+    margin-top: 3cm;
+    text-align: center;
 }
