@@ -11,33 +11,95 @@ title: Home
 <script src="https://d3js.org/d3.v6.js"></script>
 <script src="https://unpkg.com/d3-simple-slider"></script>
 
-<link rel="stylesheet" href="https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/assets/css/style.css" />
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+<style>
+.center {
+    text-align: center;
+}
+
+.left {
+    text-align: left;
+}
+
+h1 {
+    text-align: center;
+    font-size: 25px;
+    font-family: sans-serif;
+    color: black;
+}
+
+.intro {
+    text-align: center;
+}
+
+#mySliders{
+    //border-top: 1px dashed blue;
+}
+
+.result {
+    text-align: center;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    border-style: ridge;
+    border-radius: 15px;
+    border-inline-color: green ;
+    border-color: green ;
+}
+
+#result_text{
+    text-align: center;
+    border: 1px dashed blue;
+
+    padding-left: 50px;
+    padding-top: 20px;
+
+}
+
+#country_title {
+    text-align: center;
+    font-family: Verdana;
+    font-size: 24px;
+    //text-decoration: underline;
+}
+
+.references {
+    color: #808080;
+    font-size: 12px;
+    margin-top: 3cm;
+    text-align: center;
+}
+</style>
+
+
 <head> 
 <h1 id = "page_title" > Rethinking meat consumption</h1> 
-<p class = "intro"> Suppose that the world decided to reduce the amount of meat consumption on a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
-<p class = "intro"> Select a year and meat type, and check the results.</p>
+<p class = "intro"> Suppose that everyone in a country decided to reduce the amount of meat consumption on a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
+<p class = "intro"> Select a country and check the compound effects of reducing the meat consumption over the years.</p>
 </head>
 
-<div id="myYear" class = "center"  ></div>
-<div id="mySliders" class = "center"></div>
+<div class="row">
+    <div class="col-md-9">
+        <div class="row">
+            <h4 class="center" id="country_title"> World </h4> 
+            <div id="myCanvas1" style="float: left; width: 50%;" > </div>
+            <div id="myCanvas2" style="float: right; width: 50%;"> </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div id="country_selector" class="left"></div>
+        <div id="myYear" class="left"></div>
+        <div id="mySliders" class="left"></div>
+    </div>
+</div>
 
-<!-- <h2 id = "result_title" class = "result">Result</h2> -->
 <p class = "result" > 
-<a id="savings" style="color: red"></a> tonnes less CO<sub>2</sub> emission (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
-Equivalent to removing <a id="cars" style="color: red"></a> cars <br>
-And that means each person would have to eat less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
-  <a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
-  <a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
-  <a id="sheep_savings" style="color:#06a64f"></a> grams of sheep per day! <br></p>
+CO<sub>2</sub> emissions would fall by <a id="savings" style="color: red"></a> (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
+This is equivalent to the CO<sub>2</sub> emissions of <a id="cars" style="color: red"></a> cars in a year! <br>
+And the proposed reductions mean each person would only have to eat less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
+<a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
+<a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
+<a id="sheep_savings" style="color:#06a64f"></a> grams of lamb per day! <br></p>
 
-
-
-
-<h3 id = "country_title"> World </h3> 
-<div id="country_selector" class = "center"></div>
-
-<div id="myCanvas1" style="float: left; width: 50%;" > </div>
-<div id="myCanvas2" style="float: right; width: 50%;"> </div>
 
 
 <p>
@@ -53,9 +115,9 @@ And that means each person would have to eat less <a id="beef_savings" style="co
     let yr = 2008;
     let meat = [
       { index: 0, label: 'beef'},
-      { index: 1, label: 'pig'},
+      { index: 1, label: 'pork'},
       { index: 2, label: 'poultry'},
-      { index: 3, label: 'sheep'},
+      { index: 3, label: 'lamb'},
     ];
 
     let country = 'WLD';
@@ -105,20 +167,59 @@ And that means each person would have to eat less <a id="beef_savings" style="co
           .domain(meat.map(d => d.label))
           .range(d3.schemeTableau10) // try other schemes, too!
 
+    ///////////////////////////////////////////////////////////////////////////////
+    //country selector
+    let countryDiv = d3.select('#country_selector');
+    const options = csv.filter(d => parseInt(d.year) === 1990);
+
+//    countryDiv
+//        .append('text')
+//            .text('Country')
+//            .style("font-size", "12px")
+//            .attr('transform', `translate(${-10},75)`)
+
+    let selector = countryDiv.append('select');
+
+    selector
+      .selectAll("option")
+      .data(options)
+      .join("option")
+      .text(d => d.country_name)
+      .attr("value", d => d.country)
+      .property("selected", function(d){ return d.country === 'WLD'; })  
+
+    d3.select('select').on("change", function(d) {
+        country = d3.select(this).property("value");
+        countryName = csv
+            .filter(d => parseInt(d.year) === 1990)
+            .filter(d => d.country === country)
+            .map(d => d.country_name)[0]
+
+        document.getElementById("myCanvas1").innerHTML = '';
+        document.getElementById("myCanvas1").appendChild(chart_actual());
+
+        document.getElementById("myCanvas2").innerHTML = '';
+        document.getElementById("myCanvas2").appendChild(chart_emissions());
+
+        d3.select("#country_title").text(countryName)
+    });
+
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     //YEAR SLIDER
     let yearDiv = d3.select('#myYear');
-    let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 450});
+    let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 100});
     var slider = d3
        .sliderBottom()
        .min(1990)
        .max(2018)
        .step(1)
-       .ticks(5)
-       .width(yearMargin.width - yearMargin.right - yearMargin.left)
+       .tickValues([1990, 2018])
+       .tickFormat(d3.format('.0f'))
+       .width(yearMargin.width)
        .displayValue(true)
-       .fill('blue')
+       //.fill('blue')
        .default(2008)
        .handle(
          d3
@@ -136,16 +237,16 @@ And that means each person would have to eat less <a id="beef_savings" style="co
        });
 
     yearDiv
-        // .append('text')
-        //     .text('Year')
-        //     .style("font-size", "14px")
+        .append('text')
+            .text('Reduce meat consumption by year')
+            .style("font-size", "12px")
+            .attr('transform', `translate(${-10},75)`)
         .append('svg')
-        .attr('width', yearMargin.width)
-        .attr('height', 100)
+        .attr('width', 220)
+        .attr('height', 50)
         .append('g')
-        .attr('transform', `translate(${ 50},50)`)
+        .attr('transform', `translate(${75},10)`)
         .call(slider);
-
 
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -179,55 +280,23 @@ And that means each person would have to eat less <a id="beef_savings" style="co
 
               document.getElementById("myCanvas2").innerHTML = '';
               document.getElementById("myCanvas2").appendChild(chart_emissions());
-              
-
 
             });
 
 
         div
-            .append('svg')
-            .attr('width', 220)
-            .attr('height', 120)
-            .append('g')
-            .attr('transform', `translate(${75},10)`)
-            .call(slider)
-            .append('text')
-                .text(d => 'Reduce ' + meat[i].label + ' by (%)')
-                .attr('transform', `translate(${-10},75)`);
+        .append('text')
+            .text(`${meat[i].label} reductions (%)`)
+            .style("font-size", "12px")
+            .attr('transform', `translate(${-10},75)`)
+        .append('svg')
+        .attr('width', 220)
+        .attr('height', 50)
+        .append('g')
+        .attr('transform', `translate(${75},10)`)
+        .call(slider);
     });
     
-    ///////////////////////////////////////////////////////////////////////////////
-    //country selector
-    let div_country = d3.select('country_selector');
-    const options = csv.filter(d => parseInt(d.year) === 1990);
-    let selector = div.append('select');
-    selector
-      .selectAll("option")
-      .data(options)
-      .join("option")
-      .text(d => d.country_name)
-      .attr("value", d => d.country)
-      .property("selected", function(d){ return d.country === 'WLD'; })  
-
-    d3.select('select').on("change", function(d) {
-        country = d3.select(this).property("value");
-        countryName = csv
-            .filter(d => parseInt(d.year) === 1990)
-            .filter(d => d.country === country)
-            .map(d => d.country_name)[0]
-
-        document.getElementById("myCanvas1").innerHTML = '';
-        document.getElementById("myCanvas1").appendChild(chart_actual());
-
-        document.getElementById("myCanvas2").innerHTML = '';
-        document.getElementById("myCanvas2").appendChild(chart_emissions());
-
-        d3.select("#country_title").text(countryName)
-    });
-
-
-
 
     function chart_actual () {
       data = csv.filter( d => d.country === country);
@@ -262,7 +331,7 @@ And that means each person would have to eat less <a id="beef_savings" style="co
       //Defining graph parameters
       const width = 450;
       const height = 300;
-      const margin = {top: 20, right: 120, bottom: 30, left: 60};
+      const margin = {top: 20, right: 120, bottom: 40, left: 60};
      
   
       const keys = csv.columns.slice(3,7);
@@ -377,10 +446,10 @@ And that means each person would have to eat less <a id="beef_savings" style="co
         const savings = carbonData
             .filter(d => d.year >= yr)
             .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100 * 1000;
-        // carbonData is in 1000 tons CO2 equivalents
-        const savingsPerYear = savings / (2019 - yr);
+        //// carbonData is in 1000 tons CO2 equivalents
+        //const savingsPerYear = savings / (2019 - yr);
         // one car = 4.6 tons of CO2 per year
-        const cars = savingsPerYear / 4.6;
+        const cars = savings / 4.6;
         txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(savings));
         txtSavings = d3.select('#savingsPercent').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(100 * savings / 51e9));
         carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
@@ -388,7 +457,7 @@ And that means each person would have to eat less <a id="beef_savings" style="co
         
         const width = 450;
         const height = 300; 
-        const margin = {top: 20, right: 120, bottom: 30, left: 60};
+        const margin = {top: 20, right: 120, bottom: 40, left: 60};
   
         const keys = csv.columns.slice(3,7);
         const series = d3.stack().keys(keys)(newcarbonData);
