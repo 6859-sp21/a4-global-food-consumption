@@ -85,20 +85,949 @@
 </header>
 
   <div class="posts-wrapper">
-    
+    <!DOCTYPE html>
+<meta charset="utf-8">
 
-<!-- Pagination links -->
-<!--
-<div class="pagination">
-  
-    <span class="pagination-button">Older</span>
-  
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
 
-  
-      <span class="pagination-button">Newer</span>
-  
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+<style>
+.center {
+    text-align: center;
+}
+
+.left {
+    text-align: left;
+}
+
+h1 {
+    text-align: center;
+    font-size: 25px;
+    font-family: sans-serif;
+    color: black;
+}
+
+.intro {
+    text-align: center;
+}
+
+#mySliders{
+    //border-top: 1px dashed blue;
+}
+
+.result {
+    text-align: center;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    border-style: ridge;
+    border-radius: 15px;
+    border-inline-color: green ;
+    border-color: green ;
+    background-color: #f1f8e9  ;
+}
+
+#result_text{
+    text-align: center;
+    border: 1px dashed blue;
+
+//    padding-left: 50px;
+    padding-top: 20px;
+
+}
+
+#country_title {
+    text-align: center;
+    font-family: Verdana;
+    font-size: 24px;
+    //text-decoration: underline;
+}
+
+.references {
+    color: #808080;
+    font-size: 12px;
+    margin-top: 3cm;
+    text-align: center;
+}
+.notes {
+    color: #808080;
+    font-size: 12px;
+    text-align: center;
+}
+</style>
+
+
+<head> 
+<h1 id = "page_title" > Rethinking meat consumption</h1> 
+<p class = "intro"> Suppose that everyone in a country decided to reduce the amount of meat consumption on a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
+<p class = "intro"> Select a country<sup>*</sup> and check the compound effects of reducing the meat consumption over the years.</p>
+</head>
+
+<div class="row">
+    <div class="row">
+        <div class="col-md-9">
+            <h4 class="center" id="country_title"> World </h4> 
+            <div id="myCanvas1" style="float: left; width: 50%;" > </div>
+            <div id="myCanvas2" style="float: right; width: 50%;"> </div>
+        </div>
+        <div class="col-md-2">
+            <div id="country_selector" class="left"></div>
+            <div id="myYear" class="left"></div>
+            <div id="mySliders" class="left"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div id="myCanvas3" style="float: left; width: 50%;"> </div>
+        </div>
+        <div class="col-md-6">
+            <br> <br>
+            <p class = "result" > 
+            <b>Consequences of reducing meat consumption by the selected amounts:</b><br>
+            CO<sub>2</sub> emissions would fall by <a id="savings" style="color: red"></a> tons
+            <br>
+            (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
+            This is equivalent to the emissions of <a id="cars" style="color: red"></a> cars in a year! <br>
+            <br>
+            And the proposed reductions mean each person would only have to eat less 
+            <br><a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
+            <br><a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
+            <br><a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
+            <br><a id="sheep_savings" style="color:#06a64f"></a> grams of lamb per day! <br></p>
+        </div>
+    </div>
 </div>
--->
+
+
+
+
+<p>
+<p class="references"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
+<p class="notes"> <sup>*</sup>Data does not include breakdown of food consumption for European countries from OECD</p>
+
+<script>
+    d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
+
+        let beef = 0;
+        let sheep = 0;
+        let poultry = 0;
+        let pig = 0;
+        let yr = 2008;
+        let meat = [
+            { index: 0, label: 'beef'},
+            { index: 1, label: 'pork'},
+            { index: 2, label: 'poultry'},
+            { index: 3, label: 'lamb'},
+        ];
+
+        let country = 'WLD';
+        let countryName = 'World';
+
+        let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
+        let newdata = data.map(d => {
+            if (d.year >= yr) {
+                return ({
+                    year: d.year,
+                    beef: d.beef * (100 - beef) / 100,
+                    pig: d.pig * (100 - pig) / 100,
+                    poultry: d.poultry * (100 - poultry) / 100,
+                    sheep: d.sheep * (100 - sheep) / 100
+                })
+            } else {
+                return d;
+            }
+        });
+        let summaryData = csv
+            .filter(d => d.country != 'WLD' && d.year == yr)
+            .map((d,i) => ({
+                index: i,
+                country: d.country,
+                countryName: d.country_name,
+                region: d.region,
+                population : parseFloat(d.population), //in mil 
+                meat_percap: (
+                    parseFloat(d.beef) * (100 - beef) / 100 
+                    + parseFloat(d.pig) * (100 - pig) / 100
+                    + parseFloat(d.poultry) * (100 - poultry) / 100
+                    + parseFloat(d.sheep) * (100 - sheep) / 100
+                ), // in kg/person/year
+                emission_percap : (
+                    parseFloat(d.beef_emissions) * (100 - beef) / 100
+                    + parseFloat(d.pig_emissions) * (100 - pig) / 100
+                    + parseFloat(d.poultry_emissions) * (100 - poultry) / 100
+                    + parseFloat(d.sheep_emissions) * (100 - sheep) / 100
+                ) / (d.population) //in kg/cap/year
+        }))
+
+        let allRegions = ['Latin America', 'North America', 'Africa', 'East Europe', 'East Asia', 'South Asia', 'Oceania'];
+        let allPops = [20, 200, 2000];
+
+        let carbonData = data.map(d => ({
+            year: d.year, 
+            beef: d.beef_emissions, 
+            pig: d.pig_emissions, 
+            sheep: d.sheep_emissions, 
+            poultry: d.poultry_emissions
+        }));
+
+        let newcarbonData = carbonData.map(d => {
+            if (d.year >= yr) {
+                return ({
+                    year: d.year,
+                    beef: d.beef * (100 - beef) / 100 ,
+                    pig: d.pig * (100 - pig) / 100 ,
+                    sheep: d.sheep * (100 - sheep) / 100 ,
+                    poultry: d.poultry * (100 - poultry) /100
+
+                })
+            } else {
+                return d;
+            }
+        });
+
+        let meat_savings = 0;
+        const fmt = d3.format('.0f');
+        const slider_color = d3.scaleOrdinal()
+            .domain(meat.map(d => d.label))
+            .range(d3.schemeTableau10) // try other schemes, too!
+
+        ///////////////////////////////////////////////////////////////////////////////
+        //country selector
+        let countryDiv = d3.select('#country_selector');
+        const options = csv.filter(d => parseInt(d.year) === 1990);
+
+        let selector = countryDiv.append('select');
+
+        selector
+            .selectAll("option")
+            .data(options)
+            .join("option")
+            .text(d => d.country_name)
+            .attr("value", d => d.country)
+            .property("selected", function(d){ return d.country === 'WLD'; })  
+
+        d3.select('select').on("change", function(d) {
+            country = d3.select(this).property("value");
+            countryName = csv
+                .filter(d => parseInt(d.year) === 1990)
+                .filter(d => d.country === country)
+                .map(d => d.country_name)[0]
+
+            updateCharts();
+        });
+
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+            //YEAR SLIDER
+        let yearDiv = d3.select('#myYear');
+        let yearMargin = ({top: 50, right: 50, bottom: 30, left: 30, width: 100});
+        var slider = d3
+            .sliderBottom()
+            .min(1990)
+            .max(2018)
+            .step(1)
+            .tickValues([1990, 2018])
+            .tickFormat(d3.format('.0f'))
+            .width(yearMargin.width)
+            .displayValue(true)
+        //.fill('blue')
+            .default(2008)
+            .handle(
+                d3
+                .symbol()
+                .type(d3.symbolCircle)
+                .size(200)()
+            )
+            .on('onchange', num => {
+                yr = num;
+                updateCharts();
+            });
+
+        yearDiv
+            .append('text')
+            .text('Reduce meat consumption by year')
+            .style("font-size", "12px")
+            .attr('transform', `translate(${-10},75)`)
+            .append('svg')
+            .attr('width', 220)
+            .attr('height', 50)
+            .append('g')
+            .attr('transform', `translate(${75},10)`)
+            .call(slider);
+
+
+        /////////////////////////////////////////////////////////////////////////////////////
+            //MEAT SLIDER
+        let div = d3.select('#mySliders');
+        meat.forEach((d, i) => {
+            var slider = d3
+                .sliderBottom()
+                .min(0)
+                .max(100)
+                .step(10)
+                .width(100)
+                .default(0)
+                .ticks(5)
+                .fill(d => slider_color(meat[i].label))
+                .displayValue(true)
+                .handle(
+                    d3
+                    .symbol()
+                    .type(d3.symbolCircle)
+                    .size(50)()
+                )
+                .on('onchange', num => {
+                    if (i == 0){beef = num;}
+                    else if (i == 1){pig = num;}
+                    else if (i == 2){poultry = num;}
+                    else if (i == 3){sheep = num;}
+
+                    updateCharts();
+
+                });
+
+
+            div
+                .append('text')
+                .text(`${meat[i].label} reductions (%)`)
+                .style("font-size", "12px")
+                .attr('transform', `translate(${-10},75)`)
+                .append('svg')
+                .attr('width', 220)
+                .attr('height', 50)
+                .append('g')
+                .attr('transform', `translate(${75},10)`)
+                .call(slider);
+        });
+
+
+        function SelectionModel(values) {
+            const dispatch = d3.dispatch('change');
+            const state = new Set(values);
+
+            const api = {
+                on:     (type, fn) => (dispatch.on(type, fn), api),
+                clear:  () => (clear(), api),
+                has:    value => !state.size || state.has(value),
+                set:    value => (update(value, true), api),
+                toggle: value => (update(value, !state.has(value)), api)
+            };
+
+            function clear() {
+                if (state.size) {
+                    state.clear();
+                    dispatch.call('change', api, api);
+
+                }
+            }
+
+            function update(value, add) {
+                if (add && !state.has(value)) {
+                    state.add(value);
+                    dispatch.call('change', api, api);
+                } else if (!add && state.has(value)) {
+                    state.delete(value);
+                    dispatch.call('change', api, api);
+
+                }
+            }
+
+            return api;
+        }
+
+        function countryLegend(container, selmodel) {
+            const titlePadding = 4;  // padding between title and entries
+            const entrySpacing = 20;  // spacing between legend entries
+            const entryRadius = 8;    // radius of legend entry marks
+            const labelOffset = 4;    // additional horizontal offset of text labels
+            const baselineOffset = 4; // text baseline offset, depends on radius and font size
+
+            const color = d3.scaleOrdinal()
+                .domain(allRegions)
+                .range(d3.schemeTableau10) // try other schemes, too!
+
+            const entries = container.selectAll('g')
+                .data(allRegions)
+                .join('g')
+                .attr('transform', (d, index) => `translate(0, ${titlePadding + index * entrySpacing})`)
+                .on('mouseover', (e, d) => selmodel.toggle(d)) // <-- respond to clicks
+                .on('mouseout', () => selmodel.clear());
+
+            const symbols = entries.append('circle')
+                .attr('cx', entryRadius) // <-- offset symbol x-position by radius
+                .attr('r', entryRadius)
+                .attr('fill', d => color(d))
+                .attr('stroke', '#333').attr('stroke-width', 1);
+
+            const labels = entries.append('text')
+                .attr('x', 2 * entryRadius + labelOffset) // <-- place labels to the left of symbols
+                .attr('y', baselineOffset) // <-- adjust label y-position for proper alignment
+                .attr('fill', 'black')
+                .attr('font-family', 'Helvetica Neue, Arial')
+                .attr('font-size', '11px')
+                .style('user-select', 'none') // <-- disallow selectable text
+                .text((d, i) => d);
+
+            selmodel.on('change.legend', () => {
+                symbols.attr('fill', (d, i) => selmodel.has(d) ? color(d) :  '#ccc');
+                labels.attr('fill', d => selmodel.has(d) ? 'black' : '#bbb');
+                symbols.attr('stroke', d => selmodel.has(d) ? '#333' : "none");
+            });  
+        }
+
+        function sizeLegend(container, selmodel) {
+            const titlePadding = 4;  // padding between title and entries
+            const entrySpacing = 20;  // spacing between legend entries
+            const entryRadius = 8;    // radius of legend entry marks
+            const labelOffset = 4;    // additional horizontal offset of text labels
+            const baselineOffset = 4; // text baseline offset, depends on radius and font size
+
+            const size = d3.scaleSqrt()
+                .domain(d3.extent(summaryData, d => d.population))
+                .range([5, 30]) // output radii range from 4 to 35 pixels
+
+            const popEntries = container.selectAll('g')
+                .data(allPops)
+                .join('g')
+                .attr('transform', (d, index) => `translate(20, ${titlePadding + size(d)})`)
+
+            container.append('text')
+                .text('Population (millions)')
+                .attr('font-size', '11px')
+                .attr('x', -10)
+
+            const popSymbols = popEntries.append('circle')
+                .attr('cx', entryRadius) // <-- offset symbol x-position by radius
+                .attr('r', d => size(d))
+                .attr('fill', 'none')
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1);
+
+            const popLabels = popEntries.append('text')
+                .attr('x', 0) // <-- place labels to the left of symbols
+                .attr('y', d => 2.2 * baselineOffset + size(d)) // <-- adjust label y-position for proper alignment
+                .attr('fill', 'black')
+                .attr('font-family', 'Helvetica Neue, Arial')
+                .attr('font-size', '11px')
+                .style('user-select', 'none') // <-- disallow selectable text
+                .text((d, i) => d);
+
+        }
+
+        function scatter_chart() {
+            summaryData = csv
+                .filter(d => d.country != 'WLD' && d.year == yr)
+                .map((d,i) =>  {
+                    if (country === 'WLD') {
+                        return ({
+                            index: i,
+                            year: d.year,
+                            country: d.country,
+                            countryName: d.country_name,
+                            region: d.region,
+                            population : parseFloat(d.population), //in mil 
+                            meat_percap: (
+                                parseFloat(d.beef) * (100 - beef) / 100 
+                                + parseFloat(d.pig) * (100 - pig) / 100
+                                + parseFloat(d.poultry) * (100 - poultry) / 100
+                                + parseFloat(d.sheep) * (100 - sheep) / 100
+                            ), // in kg/person/year
+                            emission_percap : (
+                                parseFloat(d.beef_emissions) * (100 - beef) / 100
+                                + parseFloat(d.pig_emissions) * (100 - pig) / 100
+                                + parseFloat(d.poultry_emissions) * (100 - poultry) / 100
+                                + parseFloat(d.sheep_emissions) * (100 - sheep) / 100
+                            ) / (d.population) //in kg/cap/year
+                        })
+                    } else if (d.country === country) {
+                        return ({
+                            index: i,
+                            year: d.year,
+                            country: d.country,
+                            countryName: d.country_name,
+                            region: d.region,
+                            population : parseFloat(d.population), //in mil 
+                            meat_percap: (
+                                parseFloat(d.beef) * (100 - beef) / 100 
+                                + parseFloat(d.pig) * (100 - pig) / 100
+                                + parseFloat(d.poultry) * (100 - poultry) / 100
+                                + parseFloat(d.sheep) * (100 - sheep) / 100
+                            ), // in kg/person/year
+                            emission_percap : (
+                                parseFloat(d.beef_emissions) * (100 - beef) / 100
+                                + parseFloat(d.pig_emissions) * (100 - pig) / 100
+                                + parseFloat(d.poultry_emissions) * (100 - poultry) / 100
+                                + parseFloat(d.sheep_emissions) * (100 - sheep) / 100
+                            ) / (d.population) //in kg/cap/year
+                        })
+                    } else {
+                        return ({
+                            index: i,
+                            year: d.year,
+                            country: d.country,
+                            countryName: d.country_name,
+                            region: d.region,
+                            population : parseFloat(d.population), //in mil 
+                            meat_percap: parseFloat(d.total_meat_consumption),
+                            emission_percap : parseFloat(d.total_meat_emissions) / d.population
+                        })
+                    }
+                })
+
+            const width = 500;
+            const height = 400;
+            const margin = {top: 30, right: 100, bottom: 30, left: 70};
+            const selmodel = SelectionModel();
+
+            const x = d3.scaleLinear()
+                .domain([0, 3300])
+                .range([margin.left, width - margin.right])
+                .nice()
+
+            const y = d3.scaleLinear()
+                .domain([0, 110])
+                .range([height - margin.bottom, margin.top])
+                .nice()
+
+            const color = d3.scaleOrdinal()
+                .domain(allRegions)
+                .range(d3.schemeTableau10) // try other schemes, too!
+
+            const size = d3.scaleSqrt()
+                .domain(d3.extent(summaryData, d => d.population))
+                .range([5, 30]) // output radii range from 4 to 35 pixels
+
+            // create the container SVG element
+            const svg = d3.create('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            //select all group elements within svg and attach data to group element
+            const g = svg.selectAll('g')
+                .data(summaryData)
+                .enter() 
+                .append('g')
+
+
+            // //for each group, append circle
+            countries = g.append('circle')
+                .attr('opacity', d => (d.country === country) ? 1 : 0.8)
+                .attr('fill', d => color(d.region) /* update code here */)
+                .attr('cx', d => x(d.emission_percap) /* update code here */)
+                .attr('cy', d => y(d.meat_percap) /* update code here */)
+                .attr('r', d => size(d.population))
+                .attr('stroke', '#333')
+                .attr('stroke-width', d => (d.country === country) ? 2 : 1)
+
+
+            // position and populate the x-axis
+            svg.append('g')
+                .attr('transform', `translate(0, ${height - margin.bottom})`)
+                .call(d3.axisBottom(x))
+                .append('text')
+                .attr('text-anchor', 'end')
+                .attr('fill', 'black')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .attr('x', width - margin.right)
+                .attr('y', -10)
+                .text('Emission (kg CO2/person/year)');
+
+
+            // position and populate the y-axis
+            svg.append('g')
+                .attr('transform', `translate(${margin.left}, 0)`)
+                .call(d3.axisLeft(y))
+                .append('text')
+                .attr('transform', `translate(210, ${margin.top})`)
+                .attr('text-anchor', 'end')
+                .attr('fill', 'black')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .text('Meat consumption (kg/person/year)');
+
+            svg.append('text')
+                .attr('text-anchor', 'start')
+                .attr('transform', `translate(${10 + margin.left}, ${20 + margin.top})`)
+                .text(yr);
+
+            const c_legend = svg.append('g')
+                .attr('transform', `translate(${width -  margin.right}, ${height/20})`)
+                .call(container => countryLegend(container, selmodel)); // <-- our legend helper is invoked just like an axis generato
+
+            const s_legend = svg.append('g')
+                .attr('transform', `translate(${width -  margin.right}, ${height/20 + 175})`)
+                .call(container => sizeLegend(container, selmodel)); // <-- our legend helper is invoked just like an axis generato
+
+            // //add mouseover interaction
+            g.on('mouseover', function() {
+                d3.selectAll('circle')
+                    .attr('opacity', 0.8)
+
+                d3.select(this)
+                   .select('circle')
+                   .attr('opacity', 1)
+
+                d3.select(this)
+                    .append('text')
+                    .attr('x', width - 1.1 * margin.right)
+                    .attr('y', height - 1.8 * margin.bottom)
+                    .attr("text-anchor", "end")
+                    .attr('fill', 'black')
+                    .attr('font-weight', 5)
+                    .attr('font-size', 18)
+                    .text(d => d.countryName)
+            })
+                .on('mouseout', function() {
+                    d3.selectAll('circle')
+                        .attr('opacity', 0.8)
+
+                    d3.select(this)
+                        .attr('stroke', null)
+                        .attr('opacity', 0.8);
+                    d3.select(this).select("text").remove();
+                });
+
+
+            g.on('click', function() {
+                d3.selectAll('circle')
+                    .attr('stroke', '#333')
+                    .attr('stroke-width', 1);
+
+                d3.select(this)
+                    .select('circle')
+                    .attr('stroke', '#000')
+                    .attr('stroke-width', 2)
+
+                country = d3.select(this).datum().country;
+                countryName = csv
+                    .filter(d => parseInt(d.year) === 1990)
+                    .filter(d => d.country === country)
+                    .map(d => d.country_name)[0]
+
+                updateCountryCharts();
+
+            })
+            svg.on('dblclick', function() {
+                g.selectAll("text").remove();
+                country = 'WLD';
+                countryName = csv
+                    .filter(d => parseInt(d.year) === 1990)
+                    .filter(d => d.country === country)
+                    .map(d => d.country_name)[0]
+
+                updateCharts()
+            });
+
+
+            selmodel.on('change.chart', () => {
+                countries.attr('fill', d => selmodel.has(d.region) ? color(d.region) : '#ccc');
+                countries.attr('stroke', d => selmodel.has(d.region) ? '#333' : "none");
+
+            });
+
+            return svg.node()
+        }
+
+        function chart_actual () {
+            data = csv.filter( d => d.country === country);
+            newdata = data.map(d => {
+                if (d.year >= yr) {
+                    return ({
+                        year: d.year,
+                        beef: d.beef * (100 - beef) / 100,
+                        pig: d.pig * (100 - pig) / 100,
+                        poultry: d.poultry * (100 - poultry) / 100,
+                        sheep: d.sheep * (100 - sheep) / 100
+                    })
+                } else {
+                    return d;
+                }
+            });
+            meat_savings = data.filter(d => d.year == 2018)
+                .map(d => ({
+                    beef: d.beef * (beef/100) / 365 * 1000, 
+                    pig: d.pig * (pig/100) / 365 * 1000, 
+                    sheep: d.sheep * (sheep/100) / 365 * 1000, 
+                    poultry: d.poultry * (poultry/100) / 365 * 1000
+                }));
+
+            d3.select('#beef_savings').text(`${fmt(meat_savings[0].beef)}`);
+            d3.select('#pig_savings').text(`${fmt(meat_savings[0].pig)}`);
+            d3.select('#poultry_savings').text(`${fmt(meat_savings[0].poultry)}`);
+            d3.select('#sheep_savings').text(`${fmt(meat_savings[0].sheep)}`);
+
+            //Defining graph parameters
+            const width = 450;
+            const height = 300;
+            const margin = {top: 20, right: 120, bottom: 40, left: 60};
+
+
+            const keys = csv.columns.slice(3,7);
+            const series = d3.stack().keys(keys)(newdata);
+            const ori_series = d3.stack().keys(keys)(data);
+
+            const x = d3.scaleLinear()
+                .domain([d3.min(csv, d => d.year), d3.max(csv, d => d.year)])
+                .range([margin.left, width - margin.right])
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(ori_series, d => d3.max(d, d => d[1]))]).nice()
+                .range([height - margin.bottom, margin.top])
+
+            const area = d3.area()
+                .x(d => x(d.data.year))
+                .y0(d => y(d[0]))
+                .y1(d => y(d[1]))
+
+            const color = d3.scaleOrdinal()
+                .domain(keys)
+                .range(d3.schemeTableau10)
+
+            const xAxis = g => g
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).ticks(5, ".0f"))
+                .append('text')
+                .attr('text-anchor', 'end')
+                .attr('fill', 'black')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .attr('x', width - margin.right)
+                .attr('y', 30)
+                .text('Year')
+
+            const yAxis = g => g
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(y).ticks(5))
+                .call(g => g.select(".domain").remove())
+                .call(g => g.select(".tick:last-of-type text").clone()
+                    .attr("x", 3)
+                    .attr("y", -10)
+                    .attr("text-anchor", "start")
+                    .attr("font-weight", "bold")
+                    .attr('font-size', '12px')
+                    .text('Total meat consumption (kg/person/year)'))
+
+            const svg = d3.create("svg")
+                .attr("viewBox", [0, 0, width, height]);
+
+            svg.append("g")
+                .selectAll("path")
+                .data(series)
+                .join("path")
+                .attr("fill", ({key}) => color(key))
+                .attr("d", area)
+                .attr("opacity", 0.9)
+                .append("title")
+                .text(({key}) => key);
+
+            svg.append("g")
+                .call(xAxis);
+
+            svg.append("g")
+                .call(yAxis);
+
+            const line = d3.line()
+                .x(d => x(d.year))
+                .y(d => y(d.total_meat))
+
+            svg.append("path")
+                .datum(data)
+                .attr("class", d => "myLine " + d.key)
+                .attr("fill", "none")
+                .attr("stroke", "#707070")
+                .attr("stroke-width", 1.5)
+                .attr('d', line(data))
+
+            svg.append('g')
+                .attr('transform', `translate(${width - 0.9 * margin.right}, ${height/10})`)
+                .call(colorLegend); // <-- our legend helper is invoked just like an axis generato
+
+   return svg.node()
+   }
+
+   function chart_emissions() {
+   carbonData = data.map(d => ({
+       year: d.year, 
+       beef: d.beef_emissions, 
+       pig: d.pig_emissions, 
+       sheep: d.sheep_emissions, 
+       poultry: d.poultry_emissions
+   }));
+
+       newcarbonData = carbonData.map(d => {
+           if (d.year >= yr) {
+               return ({
+                   year: d.year,
+                   beef: d.beef * (100 - beef) / 100 ,
+                   pig: d.pig * (100 - pig) / 100 ,
+                   sheep: d.sheep * (100 - sheep) / 100 ,
+                   poultry: d.poultry * (100 - poultry) /100
+
+               })
+           } else {
+               return d;
+           }
+       });
+
+       // carbonData in 1000 tons CO2 emissions
+       // beef, poultry, sheep, pig a number between 0-100 (percentage)
+       const savings = carbonData
+           .filter(d => d.year >= yr)
+           .reduce((acc, d) => acc + d.beef * beef + d.poultry * poultry + d.sheep * sheep + d.pig * pig, 0) / 100 * 1000;
+       //// carbonData is in 1000 tons CO2 equivalents
+       //const savingsPerYear = savings / (2019 - yr);
+       // one car = 4.6 tons of CO2 per year
+       const cars = savings / 4.6;
+       txtSavings = d3.select('#savings').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(savings));
+       txtSavings = d3.select('#savingsPercent').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(100 * savings / 51e9));
+       carsSavings = d3.select('#cars').text(new Intl.NumberFormat('en-US', {maximumFractionDigits: 0}).format(cars));
+
+
+       const width = 450;
+       const height = 300; 
+       const margin = {top: 20, right: 120, bottom: 40, left: 60};
+
+       const keys = csv.columns.slice(3,7);
+       const series = d3.stack().keys(keys)(newcarbonData);
+       const ori_series = d3.stack().keys(keys)(carbonData);
+
+       const x = d3.scaleLinear()
+           .domain([d3.min(csv, d => d.year), d3.max(csv, d => d.year)])
+           .range([margin.left, width - margin.right])
+
+       const y = d3.scaleLinear()
+           .domain([0, d3.max(ori_series, d => d3.max(d, d => d[1]))]).nice()
+           .range([height - margin.bottom, margin.top])
+
+       const area = d3.area()
+           .x(d => x(d.data.year))
+           .y0(d => y(d[0]))
+           .y1(d => y(d[1]))
+
+       const color = d3.scaleOrdinal()
+           .domain(csv.columns.slice(3,7))
+           .range(d3.schemeTableau10)
+
+       const xAxis = g => g
+           .attr("transform", `translate(0,${height - margin.bottom})`)
+           .call(d3.axisBottom(x).ticks(5, ".0f"))
+           .append('text')
+           .attr('text-anchor', 'end')
+           .attr('fill', 'black')
+           .attr('font-size', '12px')
+           .attr('font-weight', 'bold')
+           .attr('x', width - margin.right)
+           .attr('y', 30)
+           .text('Year')
+
+       const yAxis = g => g
+           .attr("transform", `translate(${margin.left},0)`)
+           .call(d3.axisLeft(y).ticks(5))
+           .call(g => g.select(".domain").remove())
+           .call(g => g.select(".tick:last-of-type text").clone()
+               .attr("x", 3)
+               .attr("y", -10)
+               .attr("text-anchor", "start")
+               .attr("font-weight", "bold")
+               .attr('font-size', '12px')
+               .text('Emissions (1000 tons CO2 equivalents)'))
+
+       const svg = d3.create("svg")
+           .attr("viewBox", [0, 0, width, height]);
+
+       svg.append("g")
+           .selectAll("path")
+           .data(series)
+           .join("path")
+           .attr("fill", ({key}) => color(key))
+           .attr("d", area)
+           .attr("opacity", 0.9)
+           .append("title")
+           .text(({key}) => key);
+
+       svg.append("g")
+           .call(xAxis);
+
+       svg.append("g")
+           .call(yAxis);
+
+       svg.append('g')
+           .attr('transform', `translate(${width - 0.9 * margin.right}, ${height/10})`)
+           .call(colorLegend); 
+
+       return svg.node()
+
+   }
+
+
+        function colorLegend(container) {
+            const titlePadding = 14;  // padding between title and entries
+            const entrySpacing = 16;  // spacing between legend entries
+            const entryRadius = 5;    // radius of legend entry marks
+            const labelOffset = 4;    // additional horizontal offset of text labels
+            const baselineOffset = 4; // text baseline offset, depends on radius and font size
+
+            const keys = csv.columns.slice(3,7)
+
+            const color = d3.scaleOrdinal()
+                .domain(meat.map(d => d.label))
+                .range(d3.schemeTableau10) // try other schemes, too!
+
+                const entries = container.selectAll('g')
+                .data(meat)
+                .join('g')
+                .attr('transform', d => `translate(0, ${titlePadding + d.index * entrySpacing})`);
+
+            const symbols = entries.append('circle')
+                .attr('cx', entryRadius) // <-- offset symbol x-position by radius
+   .attr('r', entryRadius)
+   .attr('fill', d => color(d.label));
+
+            const labels = entries.append('text')
+                .attr('x', 2 * entryRadius + labelOffset) // <-- place labels to the left of symbols
+   .attr('y', baselineOffset) // <-- adjust label y-position for proper alignment
+   .attr('fill', 'black')
+   .attr('font-family', 'Helvetica Neue, Arial')
+   .attr('font-size', '11px')
+   .style('user-select', 'none') // <-- disallow selectable text
+   .text(d => d.label);
+        }
+
+        function updateCountryCharts() {
+            document.getElementById("myCanvas1").innerHTML = '';
+            document.getElementById("myCanvas1").appendChild(chart_actual());
+
+            document.getElementById("myCanvas2").innerHTML = '';
+            document.getElementById("myCanvas2").appendChild(chart_emissions());
+            d3.select('#country_title').text(countryName);
+            selector
+                .selectAll("option")
+                .filter(d => d.country_name == countryName)
+                .property("selected", countryName)  
+        }
+
+        function updateCharts() {
+            updateCountryCharts();
+            document.getElementById("myCanvas3").innerHTML = '';
+            document.getElementById("myCanvas3").appendChild(scatter_chart());
+        }
+
+
+        let old_chart1 = chart_actual ();
+        let old_chart2 = chart_emissions ();
+        let old_chart3 = scatter_chart ();
+
+
+        document.getElementById("myCanvas1").appendChild(old_chart1);
+        document.getElementById("myCanvas2").appendChild(old_chart2);
+        document.getElementById("myCanvas3").appendChild(old_chart3);
+    })
+
+
+</script>
 
   </div>
   <footer class="footer">
