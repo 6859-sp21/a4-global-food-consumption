@@ -44,13 +44,14 @@ h1 {
     border-radius: 15px;
     border-inline-color: green ;
     border-color: green ;
+    background-color: #f1f8e9  ;
 }
 
 #result_text{
     text-align: center;
     border: 1px dashed blue;
 
-    padding-left: 50px;
+//    padding-left: 50px;
     padding-top: 20px;
 
 }
@@ -68,45 +69,61 @@ h1 {
     margin-top: 3cm;
     text-align: center;
 }
+.notes {
+    color: #808080;
+    font-size: 12px;
+    text-align: center;
+}
 </style>
 
 
 <head> 
 <h1 id = "page_title" > Rethinking meat consumption</h1> 
 <p class = "intro"> Suppose that everyone in a country decided to reduce the amount of meat consumption on a given year. How much would that simple measure impact our greenhouse gases emissions? </p>
-<p class = "intro"> Select a country and check the compound effects of reducing the meat consumption over the years.</p>
+<p class = "intro"> Select a country<sup>*</sup> and check the compound effects of reducing the meat consumption over the years.</p>
 </head>
 
 <div class="row">
-    <div class="col-md-9">
+    <div class="row">
+        <div class="col-md-9">
             <h4 class="center" id="country_title"> World </h4> 
-        <div class="row">
             <div id="myCanvas1" style="float: left; width: 50%;" > </div>
             <div id="myCanvas2" style="float: right; width: 50%;"> </div>
         </div>
-        <div class="row">
-            <div id="myCanvas3" style="float: right; width: 50%;"> </div>
+        <div class="col-md-2">
+            <div id="country_selector" class="left"></div>
+            <div id="myYear" class="left"></div>
+            <div id="mySliders" class="left"></div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div id="country_selector" class="left"></div>
-        <div id="myYear" class="left"></div>
-        <div id="mySliders" class="left"></div>
+    <div class="row">
+        <div class="col-md-6">
+            <div id="myCanvas3" style="float: left; width: 50%;"> </div>
+        </div>
+        <div class="col-md-6">
+            <br> <br>
+            <p class = "result" > 
+            <b>Consequences of reducing meat consumption by the selected amounts:</b><br>
+            CO<sub>2</sub> emissions would fall by <a id="savings" style="color: red"></a> tons
+            <br>
+            (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
+            This is equivalent to the emissions of <a id="cars" style="color: red"></a> cars in a year! <br>
+            <br>
+            And the proposed reductions mean each person would only have to eat less 
+            <br><a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
+            <br><a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
+            <br><a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
+            <br><a id="sheep_savings" style="color:#06a64f"></a> grams of lamb per day! <br></p>
+        </div>
     </div>
 </div>
 
-<p class = "result" > 
-CO<sub>2</sub> emissions would fall by <a id="savings" style="color: red"></a> (<a id="savingsPercent" style="color: red"></a>% of the <b>total</b> world's CO<sub>2</sub> emissions in a year)<br>
-This is equivalent to the CO<sub>2</sub> emissions of <a id="cars" style="color: red"></a> cars in a year! <br>
-And the proposed reductions mean each person would only have to eat less <a id="beef_savings" style="color:#06a64f"></a> grams of beef,  
-<a id="pig_savings" style="color:#06a64f"></a> grams of pork,  
-<a id="poultry_savings" style="color:#06a64f"></a> grams of poultry,  
-<a id="sheep_savings" style="color:#06a64f"></a> grams of lamb per day! <br></p>
 
 
 
 <p>
 <p class="references"> Data sources: <a href="https://data.oecd.org/agroutput/meat-consumption.htm">OECD</a>, <a href="https://ourworldindata.org/food-choice-vs-eating-local">Our World in Data</a>, <a href="https://www.epa.gov/greenvehicles/greenhouse-gas-emissions-typical-passenger-vehicle">US Environmental Protection Agency</a></p>
+<p class="notes"> <sup>*</sup>Data does not include breakdown of food consumption for European countries from OECD</p>
 
 <script>
     d3.csv("https://raw.githubusercontent.com/6859-sp21/a4-global-food-consumption/main/_data/emissions.csv").then((csv) => {
@@ -124,6 +141,7 @@ And the proposed reductions mean each person would only have to eat less <a id="
         ];
 
         let country = 'WLD';
+        let countryName = 'World';
 
         let data = csv.filter( d => d.year <= yr).filter( d => d.country === country);
         let newdata = data.map(d => {
@@ -162,6 +180,7 @@ And the proposed reductions mean each person would only have to eat less <a id="
         }))
 
         let allRegions = ['Latin America', 'North America', 'Africa', 'East Europe', 'East Asia', 'South Asia', 'Oceania'];
+        let allPops = [20, 200, 2000];
 
         let carbonData = data.map(d => ({
             year: d.year, 
@@ -349,16 +368,16 @@ And the proposed reductions mean each person would only have to eat less <a id="
                 .range(d3.schemeTableau10) // try other schemes, too!
 
             const entries = container.selectAll('g')
-                .data(summaryData)
+                .data(allRegions)
                 .join('g')
                 .attr('transform', (d, index) => `translate(0, ${titlePadding + index * entrySpacing})`)
-                .on('mouseover', (e, d) => selmodel.toggle(d.region)) // <-- respond to clicks
+                .on('mouseover', (e, d) => selmodel.toggle(d)) // <-- respond to clicks
                 .on('mouseout', () => selmodel.clear());
 
             const symbols = entries.append('circle')
                 .attr('cx', entryRadius) // <-- offset symbol x-position by radius
                 .attr('r', entryRadius)
-                .attr('fill', d => color(d.region))
+                .attr('fill', d => color(d))
                 .attr('stroke', '#333').attr('stroke-width', 1);
 
             const labels = entries.append('text')
@@ -368,21 +387,80 @@ And the proposed reductions mean each person would only have to eat less <a id="
                 .attr('font-family', 'Helvetica Neue, Arial')
                 .attr('font-size', '11px')
                 .style('user-select', 'none') // <-- disallow selectable text
-                .text(d => d.region);
+                .text((d, i) => d);
 
             selmodel.on('change.legend', () => {
-                // symbols.attr('fill', d => selmodel.has(d.country) ? color(d.country) : '#ccc'); 
-                symbols.attr('fill', d => selmodel.has(d.region) ? color(d.region) :  '#ccc');
-                labels.attr('fill', d => selmodel.has(d.region) ? 'black' : '#bbb');
-                symbols.attr('stroke', d => selmodel.has(d.region) ? '#333' : "none");
+                symbols.attr('fill', (d, i) => selmodel.has(d) ? color(d) :  '#ccc');
+                labels.attr('fill', d => selmodel.has(d) ? 'black' : '#bbb');
+                symbols.attr('stroke', d => selmodel.has(d) ? '#333' : "none");
             });  
+        }
+
+        function sizeLegend(container, selmodel) {
+            const titlePadding = 4;  // padding between title and entries
+            const entrySpacing = 20;  // spacing between legend entries
+            const entryRadius = 8;    // radius of legend entry marks
+            const labelOffset = 4;    // additional horizontal offset of text labels
+            const baselineOffset = 4; // text baseline offset, depends on radius and font size
+
+            const size = d3.scaleSqrt()
+                .domain(d3.extent(summaryData, d => d.population))
+                .range([5, 30]) // output radii range from 4 to 35 pixels
+
+            const popEntries = container.selectAll('g')
+                .data(allPops)
+                .join('g')
+                .attr('transform', (d, index) => `translate(20, ${titlePadding + size(d)})`)
+
+            container.append('text')
+                .text('Population (millions)')
+                .attr('font-size', '11px')
+                .attr('x', -10)
+
+            const popSymbols = popEntries.append('circle')
+                .attr('cx', entryRadius) // <-- offset symbol x-position by radius
+                .attr('r', d => size(d))
+                .attr('fill', 'none')
+                .attr('stroke', '#333')
+                .attr('stroke-width', 1);
+
+            const popLabels = popEntries.append('text')
+                .attr('x', 0) // <-- place labels to the left of symbols
+                .attr('y', d => 2.2 * baselineOffset + size(d)) // <-- adjust label y-position for proper alignment
+                .attr('fill', 'black')
+                .attr('font-family', 'Helvetica Neue, Arial')
+                .attr('font-size', '11px')
+                .style('user-select', 'none') // <-- disallow selectable text
+                .text((d, i) => d);
+
         }
 
         function scatter_chart() {
             summaryData = csv
                 .filter(d => d.country != 'WLD' && d.year == yr)
                 .map((d,i) =>  {
-                    if (d.country === country) {
+                    if (country === 'WLD') {
+                        return ({
+                            index: i,
+                            year: d.year,
+                            country: d.country,
+                            countryName: d.country_name,
+                            region: d.region,
+                            population : parseFloat(d.population), //in mil 
+                            meat_percap: (
+                                parseFloat(d.beef) * (100 - beef) / 100 
+                                + parseFloat(d.pig) * (100 - pig) / 100
+                                + parseFloat(d.poultry) * (100 - poultry) / 100
+                                + parseFloat(d.sheep) * (100 - sheep) / 100
+                            ), // in kg/person/year
+                            emission_percap : (
+                                parseFloat(d.beef_emissions) * (100 - beef) / 100
+                                + parseFloat(d.pig_emissions) * (100 - pig) / 100
+                                + parseFloat(d.poultry_emissions) * (100 - poultry) / 100
+                                + parseFloat(d.sheep_emissions) * (100 - sheep) / 100
+                            ) / (d.population) //in kg/cap/year
+                        })
+                    } else if (d.country === country) {
                         return ({
                             index: i,
                             year: d.year,
@@ -419,7 +497,7 @@ And the proposed reductions mean each person would only have to eat less <a id="
 
             const width = 500;
             const height = 400;
-            const margin = {top: 30, right: 80, bottom: 30, left: 30};
+            const margin = {top: 30, right: 100, bottom: 30, left: 70};
             const selmodel = SelectionModel();
 
             const x = d3.scaleLinear()
@@ -489,10 +567,18 @@ And the proposed reductions mean each person would only have to eat less <a id="
                 .attr('font-weight', 'bold')
                 .text('Meat consumption (kg/person/year)');
 
+            svg.append('text')
+                .attr('text-anchor', 'start')
+                .attr('transform', `translate(${10 + margin.left}, ${20 + margin.top})`)
+                .text(yr);
+
             const c_legend = svg.append('g')
                 .attr('transform', `translate(${width -  margin.right}, ${height/20})`)
                 .call(container => countryLegend(container, selmodel)); // <-- our legend helper is invoked just like an axis generato
 
+            const s_legend = svg.append('g')
+                .attr('transform', `translate(${width -  margin.right}, ${height/20 + 175})`)
+                .call(container => sizeLegend(container, selmodel)); // <-- our legend helper is invoked just like an axis generato
 
             // //add mouseover interaction
             g.on('mouseover', function() {
@@ -514,6 +600,9 @@ And the proposed reductions mean each person would only have to eat less <a id="
                     .text(d => d.countryName)
             })
                 .on('mouseout', function() {
+                    d3.selectAll('circle')
+                        .attr('opacity', 0.8)
+
                     d3.select(this)
                         .attr('stroke', null)
                         .attr('opacity', 0.8);
@@ -833,6 +922,10 @@ And the proposed reductions mean each person would only have to eat less <a id="
             document.getElementById("myCanvas2").innerHTML = '';
             document.getElementById("myCanvas2").appendChild(chart_emissions());
             d3.select('#country_title').text(countryName);
+            selector
+                .selectAll("option")
+                .filter(d => d.country_name == countryName)
+                .property("selected", countryName)  
         }
 
         function updateCharts() {
